@@ -273,8 +273,8 @@ elif st.session_state.step == 4:
                         st.rerun()
 
     # Logic Input User (Setelah kedipan selesai)
-    else:
-        st.success("Giliran Anda! Ulangi urutannya.")
+                    else:
+                        st.success("Giliran Anda! Ulangi urutannya.")
         
         cols = st.columns(4)
         for i in range(16):
