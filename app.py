@@ -273,30 +273,45 @@ elif st.session_state.step == 4:
                         st.rerun()
 
     # Logic Input User (Setelah kedipan selesai)
-                    else:
-                        st.success("Giliran Anda! Ulangi urutannya.")
+else:
+        st.success("Giliran Anda! Ulangi urutannya.")
         
         cols = st.columns(4)
         for i in range(16):
             if cols[i%4].button("", key=f"user_{i}"):
-                # User mengklik kotak
+                # Catat klik user
                 st.session_state.corsi['user_input'].append(i)
                 
-                # Cek apakah klik-an terakhir benar
-                idx_terakhir = len(st.session_state.corsi['user_input']) - 1
-                jawaban_benar = st.session_state.corsi['sequence'][idx_terakhir]
+                # Cek apakah klik user benar
+                idx_skrg = len(st.session_state.corsi['user_input']) - 1
+                benar = st.session_state.corsi['sequence'][idx_skrg]
                 
-                if i != jawaban_benar:
-                    # JIKA SALAH
+                # --- PERHATIKAN SEJAJARNYA IF DAN ELSE DI BAWAH INI ---
+                if i != benar:
                     st.session_state.corsi['lives'] -= 1
                     if st.session_state.corsi['lives'] > 0:
-                        st.error("Salah! Silakan ulangi level ini.")
+                        st.error("Salah! Mengulang level ini...")
                         time.sleep(1)
                         st.session_state.corsi['user_input'] = []
                         st.session_state.corsi['playing_sequence'] = True
                         st.rerun()
                     else:
-                        st.session_state.step = 5 # Game Over
+                        st.session_state.step = 5
+                        st.rerun()
+                
+                elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
+                    st.session_state.corsi['score'] = st.session_state.corsi['level']
+                    
+                    if st.session_state.corsi['level'] < 9:
+                        st.session_state.corsi['level'] += 1
+                        new_len = st.session_state.corsi['level'] + 1 
+                        st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(new_len)]
+                        st.session_state.corsi['user_input'] = []
+                        st.session_state.corsi['playing_sequence'] = True
+                        st.session_state.corsi['lives'] = 2 
+                        st.rerun()
+                    else:
+                        st.session_state.step = 5
                         st.rerun()
                 
                 # JIKA BENAR DAN SUDAH SEMUA
