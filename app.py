@@ -184,23 +184,30 @@ elif st.session_state.page == "corsi_game":
     # --- FUNGSI BANTUAN VISUAL (HTML) ---
     # Kita pakai ini untuk animasi karena st.button terlalu lambat untuk kedip cepat
     def get_grid_html(highlight_idx=None):
-        html_code = """
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
-        """
+        # Kita bikin satu baris panjang atau pastikan tidak ada spasi di awal baris
+        # Warna: Biru (#007bff) jika highlight, Abu-abu (#e0e0e0) jika mati
+        
+        boxes_html = ""
         for i in range(16):
-            # Jika index cocok, warna BIRU (#007bff), jika tidak ABU-ABU (#e0e0e0)
             color = "#007bff" if i == highlight_idx else "#e0e0e0"
-            html_code += f"""
+            boxes_html += f"""
             <div style="
-                height: 70px; 
                 background-color: {color}; 
                 border-radius: 8px; 
                 border: 2px solid #bbb;
                 box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+                height: 70px;
             "></div>
             """
-        html_code += "</div>"
-        return html_code
+        
+        # Bungkus dengan container grid
+        # PENTING: style="margin:0" dan struktur rapat untuk menghindari deteksi code block
+        final_html = f"""
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+            {boxes_html}
+        </div>
+        """
+        return final_html
 
     # --- FUNGSI TOMBOL INTERAKTIF ---
     # Kita pakai ini hanya saat giliran user mengklik
