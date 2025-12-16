@@ -173,126 +173,144 @@ elif st.session_state.page == "corsi_intro":
         st.rerun()
 
 # ==========================================
-# SLIDE 5: GAME CORSI (CORE LOGIC)
+# SLIDE 5: GAME CORSI (DIPERBAIKI)
 # ==========================================
 elif st.session_state.page == "corsi_game":
     st.header(f"Level: {st.session_state.corsi_level - 1}")
     
-    # --- Container untuk Grid ---
-    grid_container = st.container()
+    # --- Container utama ---
+    game_container = st.empty()
 
-    # --- LOGIKA TOMBOL GRID ---
-    def make_grid(disabled=True, highlight_idx=None):
-        """Fungsi untuk menampilkan Grid 4x4"""
-        with grid_container:
-            # CSS untuk membuat kotak rapi
-            st.markdown("""
-            <style>
-            div.stButton > button:first-child {
-                height: 60px;
-                width: 100%;
-                background-color: #f0f0f0;
-                border: 1px solid #ccc;
-            }
-            </style>
-            """, unsafe_allow_html=True)
-            
-            # Grid 4x4 (0-15)
-            for row in range(4):
-                cols = st.columns(4)
-                for col in range(4):
-                    idx = row * 4 + col
-                    
-                    # Tentukan warna tombol (Biru jika highlight, Putih biasa)
-                    if idx == highlight_idx:
-                        # Streamlit tidak bisa ubah warna tombol native secara dinamis dengan mudah,
-                        # kita pakai trick emoji atau text jika highlight
-                        label = "🟦" 
-                    else:
-                        label = "⬜"
+    # --- FUNGSI BANTUAN VISUAL (HTML) ---
+    # Kita pakai ini untuk animasi karena st.button terlalu lambat untuk kedip cepat
+    def get_grid_html(highlight_idx=None):
+        html_code = """
+        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
+        """
+        for i in range(16):
+            # Jika index cocok, warna BIRU (#007bff), jika tidak ABU-ABU (#e0e0e0)
+            color = "#007bff" if i == highlight_idx else "#e0e0e0"
+            html_code += f"""
+            <div style="
+                height: 70px; 
+                background-color: {color}; 
+                border-radius: 8px; 
+                border: 2px solid #bbb;
+                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+            "></div>
+            """
+        html_code += "</div>"
+        return html_code
 
-                    # Callback saat tombol diklik (hanya aktif saat fase input)
-                    def on_click(clicked_idx=idx):
-                        st.session_state.corsi_user_input.append(clicked_idx)
-                    
-                    # Render Tombol
-                    cols[col].button(
-                        label, 
-                        key=f"btn_{idx}_{time.time()}", # Key unik agar tidak crash refresh
-                        disabled=disabled,
-                        on_click=on_click if not disabled else None,
-                        use_container_width=True
-                    )
+    # --- FUNGSI TOMBOL INTERAKTIF ---
+    # Kita pakai ini hanya saat giliran user mengklik
+    def render_interactive_grid():
+        # CSS agar tombol terlihat kotak penuh
+        st.markdown("""
+        <style>
+        div.stButton > button {
+            height: 70px;
+            width: 100%;
+            border-radius: 8px;
+            border: 2px solid #bbb;
+            background-color: #f0f0f0;
+        }
+        div.stButton > button:active {
+            background-color: #007bff; /* Biru saat diklik */
+            color: white;
+        }
+        </style>
+        """, unsafe_allow_html=True)
+        
+        # Grid 4x4
+        for row in range(4):
+            cols = st.columns(4)
+            for col in range(4):
+                idx = row * 4 + col
+                
+                def on_click(clicked_idx=idx):
+                    st.session_state.corsi_user_input.append(clicked_idx)
 
-    # --- FASE 1: IDLE / GENERATE SEQUENCE ---
+                # Tombol User
+                cols[col].button(
+                    "⬜", # Label kosong
+                    key=f"btn_input_{idx}",
+                    on_click=on_click,
+                    use_container_width=True
+                )
+
+    # ================= LOGIKA FASE GAME =================
+
+    # --- FASE 1: IDLE (TOMBOL MULAI) ---
     if st.session_state.corsi_phase == "idle":
-        st.info("Klik tombol 'Mulai Level Ini' untuk melihat urutan.")
-        if st.button("Mulai Level Ini"):
-            # Generate urutan acak
-            seq = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
-            st.session_state.corsi_sequence = seq
-            st.session_state.corsi_user_input = []
-            st.session_state.corsi_phase = "showing"
-            st.rerun()
+        with game_container.container():
+            st.info(f"Siap? Hafalkan urutan {st.session_state.corsi_level} kotak.")
+            # Tampilkan grid mati (abu-abu semua)
+            st.markdown(get_grid_html(None), unsafe_allow_html=True)
+            
+            if st.button("Mulai Level Ini", type="primary"):
+                # Generate urutan
+                seq = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
+                st.session_state.corsi_sequence = seq
+                st.session_state.corsi_user_input = []
+                st.session_state.corsi_phase = "showing"
+                st.rerun()
 
-    # --- FASE 2: SHOWING SEQUENCE (ANIMASI) ---
+    # --- FASE 2: SHOWING (ANIMASI BLINK) ---
     elif st.session_state.corsi_phase == "showing":
-        # Placeholder agar tidak menumpuk UI
-        placeholder = st.empty()
-        
-        with placeholder.container():
-            st.warning("Perhatikan urutan...")
-            # Tampilkan tombol mati dulu
-            make_grid(disabled=True)
-            
-        time.sleep(1)
-        
-        # Loop sequence untuk animasi
-        for item in st.session_state.corsi_sequence:
-            with placeholder.container():
-                # Tampilkan kotak yang menyala (Highlight)
-                st.warning(f"Perhatikan...")
-                make_grid(disabled=True, highlight_idx=item)
-            time.sleep(0.7) # Waktu nyala
-            
-            with placeholder.container():
-                # Tampilkan kosong (jeda antar kedipan)
-                st.warning(f"Perhatikan...")
-                make_grid(disabled=True, highlight_idx=None)
-            time.sleep(0.3) # Jeda
-            
-        # Pindah ke fase Input
+        # Gunakan Loop untuk animasi
+        with game_container.container():
+            st.warning("Hafalkan urutan...")
+            # Tampilkan awal mati
+            st.markdown(get_grid_html(None), unsafe_allow_html=True)
+            time.sleep(0.8)
+
+            for item in st.session_state.corsi_sequence:
+                # 1. NYALA BIRU
+                st.markdown(get_grid_html(highlight_idx=item), unsafe_allow_html=True)
+                time.sleep(0.8) # Durasi nyala (bisa diatur)
+                
+                # 2. MATI (Jeda antar kotak)
+                st.markdown(get_grid_html(None), unsafe_allow_html=True)
+                time.sleep(0.4) # Durasi mati
+
+        # Selesai animasi, pindah ke input
         st.session_state.corsi_phase = "input"
         st.rerun()
 
-    # --- FASE 3: INPUT USER ---
+    # --- FASE 3: INPUT (GILIRAN USER) ---
     elif st.session_state.corsi_phase == "input":
-        st.success("Ulangi urutan tadi!")
-        
-        # Tampilkan Grid Aktif (Bisa diklik)
-        make_grid(disabled=False)
-        
-        # Cek Jawaban secara Real-time
-        if len(st.session_state.corsi_user_input) > 0:
-            current_step = len(st.session_state.corsi_user_input) - 1
+        with game_container.container():
+            st.success("Giliran Anda! Klik urutan tadi.")
             
-            # Cek apakah klik terakhir benar?
-            if st.session_state.corsi_user_input[current_step] != st.session_state.corsi_sequence[current_step]:
-                # SALAH KLIK
-                st.error("Salah urutan!")
-                time.sleep(1)
+            # Tampilkan Tombol Asli (Bisa diklik)
+            render_interactive_grid()
+
+            # --- LOGIKA CEK JAWABAN (Sama seperti sebelumnya) ---
+            if len(st.session_state.corsi_user_input) > 0:
+                current_step = len(st.session_state.corsi_user_input) - 1
                 
-                if st.session_state.corsi_lives > 0:
-                    # Masih ada nyawa, ulang level yang sama
-                    st.session_state.corsi_lives -= 1
-                    st.toast("Gagal! Anda punya 1 kesempatan lagi di level ini.", icon="⚠️")
-                    st.session_state.corsi_phase = "idle"
-                    st.session_state.corsi_user_input = []
+                # Cek Benar/Salah
+                if st.session_state.corsi_user_input[current_step] != st.session_state.corsi_sequence[current_step]:
+                    st.error("❌ Salah urutan!")
                     time.sleep(1)
-                    st.rerun()
-                else:
-                    # Game Over
-                    st.session_state.page = "saving"
+                    if st.session_state.corsi_lives > 0:
+                        st.session_state.corsi_lives -= 1
+                        st.toast("Salah! Kesempatan terakhir di level ini.", icon="⚠️")
+                        st.session_state.corsi_phase = "idle"
+                        st.rerun()
+                    else:
+                        st.session_state.page = "saving"
+                        st.rerun()
+                
+                # Cek Selesai Level
+                elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
+                    st.toast("Benar! ✅", icon="🎉")
+                    time.sleep(0.5)
+                    st.session_state.corsi_score = st.session_state.corsi_level - 1
+                    st.session_state.corsi_level += 1
+                    st.session_state.corsi_lives = 1
+                    st.session_state.corsi_phase = "idle"
                     st.rerun()
             
             # Jika Benar dan sudah lengkap
