@@ -201,10 +201,36 @@ elif st.session_state.page == "corsi_game":
         # Wadah untuk tombol interaktif
         input_container = st.container()
         with input_container:
+            # CSS KHUSUS: 
+            # 1. Memaksa tombol tetap 4 kolom di HP (data-testid="column")
+            # 2. Mengatur styling tombol agar tetap rapi
             st.markdown("""
             <style>
-            div.stButton > button { height: 70px; width: 100%; border-radius: 8px; border: 2px solid #bbb; }
-            div.stButton > button:active { background-color: #007bff; color: white; }
+            /* Paksa kolom tetap berdampingan (tidak turun ke bawah) di layar HP */
+            div[data-testid="column"] {
+                width: 25% !important;
+                flex: 0 0 25% !important;
+                min-width: 0 !important;
+                padding: 0 2px !important; /* Kurangi jarak antar tombol biar muat */
+            }
+            
+            /* Styling Tombolnya */
+            div.stButton > button { 
+                height: 60px; /* Sedikit diperkecil biar aman di HP kecil */
+                width: 100%; 
+                border-radius: 6px; 
+                border: 2px solid #bbb; 
+                padding: 0px !important; /* Hapus padding teks tombol */
+            }
+            div.stButton > button:active { 
+                background-color: #007bff; 
+                color: white; 
+            }
+            
+            /* Hilangkan gap default Streamlit yang terlalu lebar */
+            div[data-testid="column"] > div {
+                gap: 0px !important;
+            }
             </style>
             """, unsafe_allow_html=True)
             
@@ -212,6 +238,7 @@ elif st.session_state.page == "corsi_game":
                 cols = st.columns(4)
                 for col in range(4):
                     idx = row * 4 + col
+                    # Gunakan lambda untuk menangkap index tombol
                     cols[col].button("⬜", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
 
     # ================= LOGIKA GAME =================
