@@ -173,138 +173,115 @@ elif st.session_state.page == "corsi_intro":
         st.rerun()
 
 # ==========================================
-# SLIDE 5: GAME CORSI (DIPERBAIKI)
+# SLIDE 5: GAME CORSI (FINAL FIX)
 # ==========================================
 elif st.session_state.page == "corsi_game":
     st.header(f"Level: {st.session_state.corsi_level - 1}")
     
-    # --- Container utama ---
-    game_container = st.empty()
+    # 1. SIAPKAN SATU TEMPAT KHUSUS (PLACEHOLDER)
+    # Ini kuncinya agar tidak jadi 8x8. Kita pesan satu tempat di layar.
+    # Apapun yang kita tulis ke 'layar_utama', akan menimpa isi sebelumnya.
+    layar_utama = st.empty()
 
-    # --- FUNGSI BANTUAN VISUAL (HTML - VERSI COMPACT/SATU BARIS) ---
-    def get_grid_html(highlight_idx=None):
-        boxes_html = ""
+    # --- FUNGSI HTML SATU BARIS (Supaya aman dari error) ---
+    def get_html(highlight_idx=None):
+        boxes = ""
         for i in range(16):
-            # Tentukan warna
+            # Warna: Biru Terang (#007bff) vs Abu-abu (#e0e0e0)
             color = "#007bff" if i == highlight_idx else "#e0e0e0"
+            # CSS Border juga kita tebalkan saat nyala biar makin jelas
+            border = "3px solid #0056b3" if i == highlight_idx else "2px solid #bbb"
             
-            # PENTING: Semuanya kita rapatkan jadi satu baris string. 
-            # Jangan di-enter ke bawah biar gak dianggap code block.
-            boxes_html += f'<div style="background-color:{color}; border-radius:8px; border:2px solid #bbb; box-shadow:2px 2px 5px rgba(0,0,0,0.1); height:70px;"></div>'
+            boxes += f'<div style="background-color:{color}; border-radius:8px; border:{border}; height:70px; transition: background-color 0.1s;"></div>'
         
-        # Bungkus container juga dalam satu baris
-        return f'<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">{boxes_html}</div>'
+        return f'<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">{boxes}</div>'
 
-    # --- FUNGSI TOMBOL INTERAKTIF ---
-    # Kita pakai ini hanya saat giliran user mengklik
-    def render_interactive_grid():
-        # CSS agar tombol terlihat kotak penuh
-        st.markdown("""
-        <style>
-        div.stButton > button {
-            height: 70px;
-            width: 100%;
-            border-radius: 8px;
-            border: 2px solid #bbb;
-            background-color: #f0f0f0;
-        }
-        div.stButton > button:active {
-            background-color: #007bff; /* Biru saat diklik */
-            color: white;
-        }
-        </style>
-        """, unsafe_allow_html=True)
-        
-        # Grid 4x4
-        for row in range(4):
-            cols = st.columns(4)
-            for col in range(4):
-                idx = row * 4 + col
-                
-                def on_click(clicked_idx=idx):
-                    st.session_state.corsi_user_input.append(clicked_idx)
+    # --- FUNGSI INPUT TOMBOL (Saat giliran user) ---
+    def render_buttons():
+        # Wadah untuk tombol interaktif
+        input_container = st.container()
+        with input_container:
+            st.markdown("""
+            <style>
+            div.stButton > button { height: 70px; width: 100%; border-radius: 8px; border: 2px solid #bbb; }
+            div.stButton > button:active { background-color: #007bff; color: white; }
+            </style>
+            """, unsafe_allow_html=True)
+            
+            for row in range(4):
+                cols = st.columns(4)
+                for col in range(4):
+                    idx = row * 4 + col
+                    cols[col].button("⬜", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
 
-                # Tombol User
-                cols[col].button(
-                    "⬜", # Label kosong
-                    key=f"btn_input_{idx}",
-                    on_click=on_click,
-                    use_container_width=True
-                )
+    # ================= LOGIKA GAME =================
 
-    # ================= LOGIKA FASE GAME =================
-
-    # --- FASE 1: IDLE (TOMBOL MULAI) ---
+    # --- FASE 1: IDLE ---
     if st.session_state.corsi_phase == "idle":
-        with game_container.container():
-            st.info(f"Siap? Hafalkan urutan {st.session_state.corsi_level} kotak.")
-            # Tampilkan grid mati (abu-abu semua)
-            st.markdown(get_grid_html(None), unsafe_allow_html=True)
+        # Tulis ke 'layar_utama'
+        with layar_utama.container():
+            st.info(f"Hafalkan urutan {st.session_state.corsi_level} kotak!")
+            st.markdown(get_html(None), unsafe_allow_html=True)
             
             if st.button("Mulai Level Ini", type="primary"):
-                # Generate urutan
                 seq = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
                 st.session_state.corsi_sequence = seq
                 st.session_state.corsi_user_input = []
                 st.session_state.corsi_phase = "showing"
                 st.rerun()
 
-    # --- FASE 2: SHOWING (ANIMASI BLINK) ---
+    # --- FASE 2: SHOWING (ANIMASI) ---
     elif st.session_state.corsi_phase == "showing":
-        # Gunakan Loop untuk animasi
-        with game_container.container():
-            st.warning("Hafalkan urutan...")
-            # Tampilkan awal mati
-            st.markdown(get_grid_html(None), unsafe_allow_html=True)
-            time.sleep(0.8)
+        # LOOP ANIMASI
+        # Kita menulis ke 'layar_utama' yang sama berulang-ulang
+        
+        # 1. Tampilkan Grid Mati Dulu
+        layar_utama.markdown(get_html(None), unsafe_allow_html=True)
+        time.sleep(1)
 
-            for item in st.session_state.corsi_sequence:
-                # 1. NYALA BIRU
-                st.markdown(get_grid_html(highlight_idx=item), unsafe_allow_html=True)
-                time.sleep(0.8) # Durasi nyala (bisa diatur)
-                
-                # 2. MATI (Jeda antar kotak)
-                st.markdown(get_grid_html(None), unsafe_allow_html=True)
-                time.sleep(0.4) # Durasi mati
+        for item in st.session_state.corsi_sequence:
+            # 2. NYALA BIRU (TIMPA layar_utama)
+            layar_utama.markdown(get_html(highlight_idx=item), unsafe_allow_html=True)
+            time.sleep(0.8) # Durasi Nyala
+            
+            # 3. MATI (TIMPA layar_utama LAGI)
+            layar_utama.markdown(get_html(None), unsafe_allow_html=True)
+            time.sleep(0.4) # Durasi Jeda
 
-        # Selesai animasi, pindah ke input
+        # Selesai animasi, pindah fase
         st.session_state.corsi_phase = "input"
         st.rerun()
 
-    # --- FASE 3: INPUT (GILIRAN USER) ---
+    # --- FASE 3: INPUT ---
     elif st.session_state.corsi_phase == "input":
-        with game_container.container():
-            st.success("Giliran Anda! Klik urutan tadi.")
-            
-            # Tampilkan Tombol Asli (Bisa diklik)
-            render_interactive_grid()
+        # Bersihkan layar_utama dari HTML gambar kotak
+        layar_utama.empty() 
+        
+        st.success("Giliran Anda! Klik urutan tadi.")
+        render_buttons()
 
-            # --- LOGIKA CEK JAWABAN (Sama seperti sebelumnya) ---
-            if len(st.session_state.corsi_user_input) > 0:
-                current_step = len(st.session_state.corsi_user_input) - 1
-                
-                # Cek Benar/Salah
-                if st.session_state.corsi_user_input[current_step] != st.session_state.corsi_sequence[current_step]:
-                    st.error("❌ Salah urutan!")
-                    time.sleep(1)
-                    if st.session_state.corsi_lives > 0:
-                        st.session_state.corsi_lives -= 1
-                        st.toast("Salah! Kesempatan terakhir di level ini.", icon="⚠️")
-                        st.session_state.corsi_phase = "idle"
-                        st.rerun()
-                    else:
-                        st.session_state.page = "saving"
-                        st.rerun()
-                
-                # Cek Selesai Level
-                elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
-                    st.toast("Benar! ✅", icon="🎉")
-                    time.sleep(0.5)
-                    st.session_state.corsi_score = st.session_state.corsi_level - 1
-                    st.session_state.corsi_level += 1
-                    st.session_state.corsi_lives = 1
+        # CEK JAWABAN
+        if len(st.session_state.corsi_user_input) > 0:
+            curr = len(st.session_state.corsi_user_input) - 1
+            if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
+                st.error("❌ Salah!")
+                time.sleep(0.5)
+                if st.session_state.corsi_lives > 0:
+                    st.session_state.corsi_lives -= 1
+                    st.toast("Salah! Coba lagi.", icon="⚠️")
                     st.session_state.corsi_phase = "idle"
                     st.rerun()
+                else:
+                    st.session_state.page = "saving"
+                    st.rerun()
+            elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
+                st.toast("Benar! 🎉", icon="✅")
+                time.sleep(0.5)
+                st.session_state.corsi_score = st.session_state.corsi_level - 1
+                st.session_state.corsi_level += 1
+                st.session_state.corsi_lives = 1
+                st.session_state.corsi_phase = "idle"
+                st.rerun()
             
             # Jika Benar dan sudah lengkap
             elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
