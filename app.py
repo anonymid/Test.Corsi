@@ -181,33 +181,19 @@ elif st.session_state.page == "corsi_game":
     # --- Container utama ---
     game_container = st.empty()
 
-    # --- FUNGSI BANTUAN VISUAL (HTML) ---
-    # Kita pakai ini untuk animasi karena st.button terlalu lambat untuk kedip cepat
+    # --- FUNGSI BANTUAN VISUAL (HTML - VERSI COMPACT/SATU BARIS) ---
     def get_grid_html(highlight_idx=None):
-        # Kita bikin satu baris panjang atau pastikan tidak ada spasi di awal baris
-        # Warna: Biru (#007bff) jika highlight, Abu-abu (#e0e0e0) jika mati
-        
         boxes_html = ""
         for i in range(16):
+            # Tentukan warna
             color = "#007bff" if i == highlight_idx else "#e0e0e0"
-            boxes_html += f"""
-            <div style="
-                background-color: {color}; 
-                border-radius: 8px; 
-                border: 2px solid #bbb;
-                box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
-                height: 70px;
-            "></div>
-            """
+            
+            # PENTING: Semuanya kita rapatkan jadi satu baris string. 
+            # Jangan di-enter ke bawah biar gak dianggap code block.
+            boxes_html += f'<div style="background-color:{color}; border-radius:8px; border:2px solid #bbb; box-shadow:2px 2px 5px rgba(0,0,0,0.1); height:70px;"></div>'
         
-        # Bungkus dengan container grid
-        # PENTING: style="margin:0" dan struktur rapat untuk menghindari deteksi code block
-        final_html = f"""
-        <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 20px;">
-            {boxes_html}
-        </div>
-        """
-        return final_html
+        # Bungkus container juga dalam satu baris
+        return f'<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">{boxes_html}</div>'
 
     # --- FUNGSI TOMBOL INTERAKTIF ---
     # Kita pakai ini hanya saat giliran user mengklik
