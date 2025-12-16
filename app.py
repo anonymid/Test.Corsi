@@ -190,12 +190,12 @@ elif st.session_state.step == 3:
 elif st.session_state.step == 4:
     st.header(f"Level {st.session_state.corsi['level']} / 9")
     
-    # Logic untuk menampilkan sequence (Blink Biru)
+    # 1. LOGIKA MENAMPILKAN URUTAN (BLINK)
     if st.session_state.corsi['playing_sequence']:
         placeholder = st.empty()
         seq = st.session_state.corsi['sequence']
         
-        # 1. Tampilkan Grid Kosong Sebelum Mulai
+        # Tampilkan grid kosong sebentar sebelum mulai
         with placeholder.container():
             st.warning("Perhatikan urutan...")
             cols = st.columns(4)
@@ -203,20 +203,19 @@ elif st.session_state.step == 4:
                 cols[i%4].button("", key=f"init_{i}", disabled=True)
             time.sleep(1)
 
-        # 2. Munculkan Kedipan Biru Satu per Satu
+        # Proses kedipan biru
         for target_idx in seq:
             with placeholder.container():
                 st.warning("Perhatikan...")
                 cols = st.columns(4)
                 for i in range(16):
-                    # Jika index sama dengan target, beri warna biru (type=primary)
                     if i == target_idx:
                         cols[i%4].button("", key=f"blink_{i}_{time.time()}", type="primary")
                     else:
                         cols[i%4].button("", key=f"bg_{i}_{time.time()}")
-            time.sleep(0.8) # Durasi lampu nyala
+            time.sleep(0.8)
             
-            # Matikan lampu sebentar antar kedipan
+            # Jeda antar kedipan (mati sebentar)
             with placeholder.container():
                 st.warning("Perhatikan...")
                 cols = st.columns(4)
@@ -226,6 +225,52 @@ elif st.session_state.step == 4:
             
         st.session_state.corsi['playing_sequence'] = False
         st.rerun()
+
+    # 2. LOGIKA MENERIMA INPUT USER (SETELAH BLINK SELESAI)
+    else:
+        st.success("Giliran Anda! Ulangi urutannya.")
+        
+        cols = st.columns(4)
+        for i in range(16):
+            if cols[i%4].button("", key=f"user_{i}"):
+                # Catat input user
+                st.session_state.corsi['user_input'].append(i)
+                
+                # Cek apakah klik user benar
+                idx_skrg = len(st.session_state.corsi['user_input']) - 1
+                benar = st.session_state.corsi['sequence'][idx_skrg]
+                
+                if i != benar:
+                    # JIKA SALAH
+                    st.session_state.corsi['lives'] -= 1
+                    if st.session_state.corsi['lives'] > 0:
+                        st.error("Salah! Mengulang level ini...")
+                        time.sleep(1)
+                        st.session_state.corsi['user_input'] = []
+                        st.session_state.corsi['playing_sequence'] = True
+                        st.rerun()
+                    else:
+                        # Gagal total (sudah salah 2x)
+                        st.session_state.step = 5
+                        st.rerun()
+                
+                elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
+                    # JIKA BENAR SEMUA DALAM SATU LEVEL
+                    st.session_state.corsi['score'] = st.session_state.corsi['level']
+                    
+                    if st.session_state.corsi['level'] < 9:
+                        st.session_state.corsi['level'] += 1
+                        # Panjang urutan bertambah
+                        new_len = st.session_state.corsi['level'] + 1 
+                        st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(new_len)]
+                        st.session_state.corsi['user_input'] = []
+                        st.session_state.corsi['playing_sequence'] = True
+                        st.session_state.corsi['lives'] = 2 
+                        st.rerun()
+                    else:
+                        # Selesai level 9
+                        st.session_state.step = 5
+                        st.rerun()
 
     # Logic Input User (Setelah kedipan selesai)
     else:
