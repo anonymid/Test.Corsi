@@ -12,20 +12,44 @@ st.set_page_config(page_title="Studi Responden", page_icon="🧠")
 # --- CSS CUSTOM (Agar tampilan Corsi 4x4 rapi di HP & Desktop) ---
 st.markdown("""
 <style>
+    /* Menghilangkan padding antar kolom Streamlit agar rapat */
+    [data-testid="column"] {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Styling tombol grid agar jadi kotak bersih */
     .stButton button {
-        width: 100%;
-        height: 80px;
-        font-size: 20px;
-        margin: 2px;
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important; /* Membuat kotak sempurna */
+        height: auto !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border-radius: 0px !important; /* Kotak tajam, hilangkan lengkungan */
+        border: 1px solid #eeeeee !important; /* Garis tipis antar kotak */
+        background-color: #f0f2f6;
+        box-shadow: none !important; /* HILANGKAN SHADOW */
+        transition: none !important;
+        font-size: 0px !important; /* Hilangkan teks/emoji agar bersih */
     }
-    .corsi-grid {
-        display: grid;
-        grid-template-columns: repeat(4, 1fr);
-        gap: 10px;
+
+    /* Efek saat tombol ditekan (jangan ada shadow/transform) */
+    .stButton button:active, .stButton button:focus, .stButton button:hover {
+        border: 1px solid #eeeeee !important;
+        box-shadow: none !important;
+        color: transparent !important;
+        background-color: #f0f2f6; /* Warna default saat hover */
     }
-    /* Warna tombol aktif (simulasi blink) */
-    .blink-blue { background-color: #0000FF !important; color: white !important; }
-    .blink-green { background-color: #00FF00 !important; color: black !important; }
+
+    /* Warna Blink Biru (Saat sequence tampil) */
+    div.stButton > button[kind="primary"] {
+        background-color: #0000FF !important; /* Biru pekat */
+        border: none !important;
+        box-shadow: none !important;
+    }
+
+    /* Warna Blink Hijau (Feedback klik user) */
+    /* Kita gunakan trik CSS untuk mendeteksi klik jika perlu */
 </style>
 """, unsafe_allow_html=True)
 
@@ -45,6 +69,9 @@ def save_to_google_sheets(data):
         st.error(f"Terjadi kesalahan koneksi: {e}")
 
 # --- INISIALISASI STATE ---
+if 'sudah_simpan' not in st.session_state:
+    st.session_state.sudah_simpan = False
+    
 if 'step' not in st.session_state:
     st.session_state.update({
         'step': 0, # 0: Welcome, 1: Data Diri, 2: Kuesioner, 3: Corsi Intro, 4: Corsi Game, 5: Finish
@@ -202,14 +229,15 @@ elif st.session_state.step == 4:
             time.sleep(1)
 
         for target_idx in seq:
-            with placeholder.container():
-                st.warning(f"Perhatikan...")
-                cols = st.columns(4)
-                for i in range(16):
-                    # Blink Biru
-                    label = "🟦" if i == target_idx else "⬜"
-                    cols[i%4].button(label, key=f"blink_{i}_{time.time()}", disabled=True)
-            time.sleep(0.8) # Durasi nyala
+    with placeholder.container():
+        cols = st.columns(4)
+        for i in range(16):
+            # Gunakan type="primary" untuk warna biru (sudah diatur di CSS)
+            if i == target_idx:
+                cols[i%4].button("", key=f"blink_{i}_{time.time()}", type="primary")
+            else:
+                cols[i%4].button("", key=f"empty_{i}_{time.time()}")
+    time.sleep(0.8)
             
             # Matikan sebentar antar blink
             with placeholder.container():
