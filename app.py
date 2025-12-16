@@ -1,195 +1,64 @@
 import streamlit as st
-import time
+import pandas as pd
+from streamlit_gsheets import GSheetsConnection
 import random
-import requests
-from datetime import datetime
+import time
 
-# --- 1. KONFIGURASI HALAMAN ---
-st.set_page_config(page_title="Studi Responden", page_icon="🧠", layout="centered")
+# Pengaturan Halaman
+st.set_page_config(page_title="Penelitian Memori Kerja", layout="centered")
 
-# --- 2. CSS SAKTI: FIX WARNA & GRID ---
-st.markdown("""
-<style>
-    /* Paksa Grid 4x4 Tetap Berjejer */
-    .grid-container {
-        display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 8px !important;
-        width: 100% !important;
-        max-width: 400px;
-        margin: 0 auto;
-    }
+# Inisialisasi Database Google Sheets
+conn = st.connection("gsheets", type=GSheetsConnection)
+
+# Inisialisasi State (Penyimpanan Sementara)
+if 'page' not in st.session_state:
+    st.session_state.page = "welcome"
+if 'corsi_level' not in st.session_state:
+    st.session_state.corsi_level = 2
+if 'corsi_lives' not in st.session_state:
+    st.session_state.corsi_lives = 1
+if 'corsi_score' not in st.session_state:
+    st.session_state.corsi_score = 0
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {}
+
+# --- FUNGSI SIMPAN DATA ---
+def save_to_sheet(final_data):
+    # Membaca data lama
+    existing_data = conn.read(worksheet="Sheet1")
+    updated_df = pd.concat([existing_data, pd.DataFrame([final_data])], ignore_index=True)
+    # Menulis kembali ke Google Sheets
+    conn.update(worksheet="Sheet1", data=updated_df)
+
+# --- SLIDE 0: WELCOME ---
+if st.session_state.page == "welcome":
+    st.title("Penelitian Pengaruh Ketergantungan Internet terhadap Kinerja Memori Kerja")
+    st.write("""
+    Terimakasih telah bersedia menjadi responden kami dalam penelitian ini, semua data yang anda masukkan 
+    akan kami gunakan untuk keperluan akademik dan akan kami jaga kerahasiaannya. Sebagai bentuk terimakasih, 
+    silahkan isi nomor whatsapp dengan benar, kami akan memberikan e-money kepada 5 orang yang terpilih.
+    """)
     
-    [data-testid="column"] {
-        width: unset !important;
-        flex: unset !important;
-        min-width: unset !important;
-    }
-    
-    /* STYLE DASAR TOMBOL GRID */
-    .stButton button {
-        width: 100% !important;
-        aspect-ratio: 1 / 1 !important;
-        padding: 0 !important;
-        border-radius: 0px !important;
-        border: 0.5px solid #555 !important;
-        background-color: #f0f2f6 !important; /* Warna dasar abu muda */
-        color: transparent !important;
-        box-shadow: none !important;
-    }
-
-    /* KELAS KHUSUS UNTUK BLINK BIRU (DIPAKSA) */
-    /* Kita gunakan selector khusus agar tidak kalah dengan css streamlit */
-    div.stButton > button[key*="on_"] {
-        background-color: #0000FF !important; /* BIRU MURNI */
-        border: none !important;
-    }
-
-    /* TOMBOL NAVIGASI (Lanjut, Next, Mulai) */
-    /* Kita targetkan tombol yang ADA teksnya */
-    div.stButton > button:not([key*="grid_"]):not([key*="blink_"]):not([key*="off_"]):not([key*="user_"]):not([key*="on_"]):not([key*="bg_"]) {
-        aspect-ratio: auto !important;
-        width: auto !important;
-        padding: 10px 25px !important;
-        background-color: #FF4B4B !important; /* Warna Merah Navigasi */
-        color: white !important;
-        border-radius: 8px !important;
-        border: none !important;
-    }
-</style>
-""", unsafe_allow_html=True)
-
-# --- 3. FUNGSI SIMPAN DATA ---
-def save_to_google_sheets(data):
-    SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
-    try:
-        requests.post(SCRIPT_URL, json=data, timeout=10)
-    except:
-        pass
-
-# --- 4. INISIALISASI STATE ---
-if 'step' not in st.session_state:
-    st.session_state.update({
-        'step': 0, 'data_diri': {}, 'skor_kuesioner': 0, 'sudah_simpan': False,
-        'corsi': {'level': 1, 'sequence': [], 'user_input': [], 'playing_sequence': False, 'lives': 2, 'score': 0}
-    })
-
-# --- 5. NAVIGASI ---
-
-if st.session_state.step == 0:
-    st.title("Selamat Datang")
-    st.write("Terimakasih telah bersedia menjadi responden.")
-    bersedia = st.checkbox("Saya bersedia ikut serta.")
-    if st.button("Lanjut"):
-        if bersedia: st.session_state.step = 1; st.rerun()
-
-elif st.session_state.step == 1:
-    st.header("Data Responden")
-    with st.form("bio"):
-        inisial = st.text_input("Inisial")
-        wa = st.text_input("WA")
-        umur = st.selectbox("Umur", ["17 - 28", "< 17", "> 28"])
-        jk = st.selectbox("JK", ["Pria", "Wanita"])
-        pekerjaan = st.selectbox("Pekerjaan", ["SMA/SMK", "Mahasiswa", "Pekerja"])
-        domisili = st.text_input("Domisili")
-        neuro = st.selectbox("Gangguan Neurologis", ["Tidak Ada", "ADHD", "Autisme", "Lainnya"])
-        psiko = st.selectbox("Gangguan Psikologis", ["Tidak ada", "Stress", "Kecemasan", "Lainnya"])
-        if st.form_submit_button("Lanjut ke Kuesioner"):
-            if inisial and wa:
-                st.session_state.data_diri = {"Inisial":inisial,"WA":wa,"Umur":umur,"JK":jk,"Pekerjaan":pekerjaan,"Domisili":domisili,"Neuro":neuro,"Psiko":psiko}
-                st.session_state.step = 2; st.rerun()
-
-elif st.session_state.step == 2:
-    st.header("Kuesioner")
-    questions = [
-        "Internet lebih lama dari rencana.", "Pertemanan baru di internet.", "Merahasiakan aktivitas internet.",
-        "Menutupi pikiran dengan internet.", "Takut hidup hampa tanpa internet.", "Marah jika diganggu main internet.",
-        "Memikirkan internet saat offline.", "Memilih internet dibanding orang.", "Gelisah jika tidak main internet.",
-        "Mengabaikan tugas.", "Nilai akademik menurun.", "Kinerja harian terganggu.",
-        "Kurang tidur karena internet.", "Gagal mengurangi waktu internet.", "Berkata 'sebentar lagi'.",
-        "Menyembunyikan durasi internet.", "Abaikan kegiatan penting.", "Sulit berhenti main internet."
-    ]
-    with st.form("kues"):
-        sc = 0
-        for i, q in enumerate(questions):
-            val = st.radio(f"{i+1}. {q}", [1, 2, 3, 4], horizontal=True, key=f"q_{i}")
-            sc += val
-        if st.form_submit_button("Mulai Tes Corsi"):
-            st.session_state.skor_kuesioner = sc
-            st.session_state.step = 3; st.rerun()
-
-elif st.session_state.step == 3:
-    st.header("Tes Corsi")
-    st.write("Ingat kotak yang menyala **BIRU**.")
-    if st.button("MULAI SEKARANG"):
-        st.session_state.corsi['level'] = 1
-        st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(2)]
-        st.session_state.corsi['playing_sequence'] = True
-        st.session_state.step = 4; st.rerun()
-
-# --- 6. GAME: FIX BLINK BIRU ---
-elif st.session_state.step == 4:
-    st.write(f"### Level {st.session_state.corsi['level']}")
-    
-    if st.session_state.corsi['playing_sequence']:
-        placeholder = st.empty()
-        for target in st.session_state.corsi['sequence']:
-            with placeholder.container():
-                st.markdown('<div class="grid-container">', unsafe_allow_html=True)
-                cols = st.columns(4)
-                for i in range(16):
-                    with cols[i%4]:
-                        if i == target:
-                            # Gunakan key "on_" agar dideteksi CSS Biru
-                            st.button(" ", key=f"on_{i}_{target}_{time.time()}")
-                        else:
-                            st.button(" ", key=f"bg_{i}_{target}_{time.time()}")
-                st.markdown('</div>', unsafe_allow_html=True)
-            time.sleep(1.0) # Kedip biru 1 detik
-            
-            # Jeda antar kotak (Semua abu-abu)
-            with placeholder.container():
-                st.markdown('<div class="grid-container">', unsafe_allow_html=True)
-                cols = st.columns(4)
-                for i in range(16):
-                    with cols[i%4]:
-                        st.button(" ", key=f"off_{i}_{target}_{time.time()}")
-                st.markdown('</div>', unsafe_allow_html=True)
-            time.sleep(0.3)
-            
-        st.session_state.corsi['playing_sequence'] = False
+    consent = st.checkbox("Apakah anda bersedia menjadi responden?")
+    if st.button("Next", disabled=not consent):
+        st.session_state.page = "data_responden"
         st.rerun()
 
-    else:
-        st.success("Ulangi urutan!")
-        st.markdown('<div class="grid-container">', unsafe_allow_html=True)
-        cols = st.columns(4)
-        for i in range(16):
-            with cols[i%4]:
-                if st.button(" ", key=f"user_{i}"):
-                    st.session_state.corsi['user_input'].append(i)
-                    curr = len(st.session_state.corsi['user_input']) - 1
-                    if i != st.session_state.corsi['sequence'][curr]:
-                        st.session_state.corsi['lives'] -= 1
-                        if st.session_state.corsi['lives'] > 0:
-                            st.error("Salah! Mengulang...")
-                            time.sleep(1); st.session_state.corsi['user_input'] = []; st.session_state.corsi['playing_sequence'] = True; st.rerun()
-                        else:
-                            st.session_state.step = 5; st.rerun()
-                    elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
-                        st.session_state.corsi['score'] = st.session_state.corsi['level']
-                        if st.session_state.corsi['level'] < 9:
-                            st.session_state.corsi['level'] += 1
-                            st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(st.session_state.corsi['level'] + 1)]
-                            st.session_state.corsi['user_input'] = []; st.session_state.corsi['playing_sequence'] = True; st.session_state.corsi['lives'] = 2; st.rerun()
-                        else:
-                            st.session_state.step = 5; st.rerun()
-        st.markdown('</div>', unsafe_allow_html=True)
-
-elif st.session_state.step == 5:
-    st.header("Selesai")
-    if not st.session_state.sudah_simpan:
-        final_data = {"Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"), **st.session_state.data_diri, "Skor_Kuesioner": st.session_state.skor_kuesioner, "Skor_Corsi": st.session_state.corsi['score']}
-        save_to_google_sheets(final_data)
-        st.session_state.sudah_simpan = True
-    st.success("Terimakasih! Data telah tersimpan.")
+# --- SLIDE 1: DATA RESPONDEN ---
+elif st.session_state.page == "data_responden":
+    st.header("Data Responden")
+    st.info("Mohon diisi dengan kondisi anda yang sebenarnya.")
+    
+    with st.form("form_responden"):
+        st.session_state.user_data['inisial'] = st.text_input("Inisial")
+        st.session_state.user_data['umur'] = st.selectbox("Umur", list(range(17, 29)))
+        st.session_state.user_data['gender'] = st.selectbox("Jenis Kelamin", ["Pria", "Wanita"])
+        st.session_state.user_data['status'] = st.selectbox("Status Pekerjaan", ["SMA/SMK", "Mahasiswa", "Pekerja"])
+        st.session_state.user_data['domisili'] = st.text_input("Domisili")
+        st.session_state.user_data['wa'] = st.text_input("Nomor Whatsapp")
+        st.session_state.user_data['durasi'] = st.selectbox("Durasi Penggunaan Internet Perhari", ["1-3 jam", "4-7 jam", "> 7 jam"])
+        st.session_state.user_data['tujuan'] = st.selectbox("Tujuan Penggunaan Internet", ["Media Sosial", "Menonton Film", "Game Online", "Belajar/Bekerja"])
+        st.session_state.user_data['aktivitas'] = st.selectbox("Jenis Aktifitas Dominan", ["Scrolling Pasif", "Scrolling Aktif"])
+        st.session_state.user_data['gadget'] = st.radio("Menggunakan Gadget sebelum tidur?", ["Ya", "Tidak"])
+        st.session_state.user_data['tidur_durasi'] = st.selectbox("Durasi Rata-rata tidur", ["< 5 jam", "6 jam", "7 jam", "> 8 jam"])
+        st.session_state.user_data['tidur_kualitas'] = st.selectbox("Kualitas tidur", ["Baik", "Sedang", "Buruk
