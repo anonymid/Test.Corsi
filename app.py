@@ -7,17 +7,43 @@ from datetime import datetime
 # --- CONFIG ---
 st.set_page_config(page_title="Studi Responden", page_icon="🧠", layout="centered")
 
-# --- CSS: HANYA UNTUK NAVIGASI ---
+# --- CSS: MEMAKSA GRID DAN MEMBERSIHKAN TAMPILAN ---
 st.markdown("""
 <style>
-    /* Tombol Navigasi (Lanjut/Mulai) tetap standar */
+    /* Paksa tombol navigasi tetap terlihat normal */
     .stButton > button {
-        border-radius: 8px;
+        border-radius: 8px !important;
+        margin-top: 10px;
     }
-    /* Sembunyikan Header Streamlit biar fokus */
-    header {visibility: hidden;}
-    #MainMenu {visibility: hidden;}
-    footer {visibility: hidden;}
+    
+    /* Hilangkan padding berlebih di mobile */
+    .main .block-container {
+        padding-top: 2rem;
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    /* CONTAINER GRID KHUSUS */
+    .corsi-container {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        width: 100%;
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    /* Gaya Kotak Grid */
+    .grid-box {
+        width: 100%;
+        aspect-ratio: 1/1;
+        border: 1px solid #444;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -41,123 +67,141 @@ if 'step' not in st.session_state:
 if st.session_state.step == 0:
     st.title("Selamat Datang")
     st.write("Terimakasih telah bersedia menjadi responden.")
-    bersedia = st.checkbox("Saya bersedia")
+    bersedia = st.checkbox("Saya bersedia mengikuti penelitian ini")
     if st.button("Lanjut"):
-        if bersedia: st.session_state.step = 1; st.rerun()
+        if bersedia: 
+            st.session_state.step = 1
+            st.rerun()
 
 elif st.session_state.step == 1:
     st.header("Data Responden")
     with st.form("bio"):
         inisial = st.text_input("Inisial")
-        wa = st.text_input("WA")
+        wa = st.text_input("Nomor Whatsapp")
         umur = st.selectbox("Umur", ["17 - 28", "< 17", "> 28"])
-        jk = st.selectbox("JK", ["Pria", "Wanita"])
-        submit = st.form_submit_button("Next")
-        if submit:
-            st.session_state.data_diri = {"Inisial": inisial, "WA": wa, "Umur": umur, "JK": jk}
-            st.session_state.step = 2; st.rerun()
+        jk = st.selectbox("Jenis Kelamin", ["Pria", "Wanita"])
+        if st.form_submit_button("Lanjut ke Kuesioner"):
+            if inisial and wa:
+                st.session_state.data_diri = {"Inisial": inisial, "WA": wa, "Umur": umur, "JK": jk}
+                st.session_state.step = 2
+                st.rerun()
+            else:
+                st.error("Inisial dan WA wajib diisi")
 
 elif st.session_state.step == 2:
-    st.header("Kuesioner")
+    st.header("Kuesioner Singkat")
     with st.form("kues"):
-        # Anggap kuesioner singkat untuk testing
-        q1 = st.radio("Saya sulit berhenti main internet", [1,2,3,4], horizontal=True)
+        q1 = st.radio("Saya merasa sulit berhenti menggunakan internet", [1,2,3,4], horizontal=True)
+        # Tambahkan pertanyaan lain di sini jika perlu
         if st.form_submit_button("Mulai Tes Corsi"):
             st.session_state.skor_kuesioner = q1
-            st.session_state.step = 3; st.rerun()
+            st.session_state.step = 3
+            st.rerun()
 
 elif st.session_state.step == 3:
-    st.header("Tes Corsi")
-    st.write("Ingat urutan kotak BIRU.")
-    if st.button("MULAI TES"):
+    st.header("Instruksi Tes Corsi")
+    st.info("Perhatikan urutan kotak yang akan menyala **BIRU**, lalu klik kotak tersebut sesuai urutannya.")
+    if st.button("MULAI SEKARANG"):
         st.session_state.corsi['level'] = 1
         st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(2)]
         st.session_state.corsi['playing_sequence'] = True
-        st.session_state.step = 4; st.rerun()
+        st.session_state.step = 4
+        st.rerun()
 
-# --- BAGIAN GAME: GRID PERMANEN 4X4 ---
+# --- HALAMAN GAME: SOLUSI GRID STABIL ---
 elif st.session_state.step == 4:
-    st.write(f"### Level {st.session_state.corsi['level']}")
+    st.subheader(f"Level {st.session_state.corsi['level']} / 9")
     
-    # Fungsi pembantu buat bikin grid pake tombol asli agar responsif klik-nya
-    def render_grid(target_id=None, is_off=False):
-        # Kita pakai 4 kolom standar tapi dengan CSS 'gap 0' dan 'flex-row'
-        # Supaya paksa 4x4, kita bungkus dalam container khusus
-        st.markdown("""
-            <style>
-                div[data-testid="column"] {
-                    flex: 1 1 20% !important;
-                    min-width: 20% !important;
-                }
-                div[data-testid="stHorizontalBlock"] {
-                    display: flex !important;
-                    flex-direction: row !important;
-                    flex-wrap: nowrap !important;
-                    gap: 5px !important;
-                }
-                .stButton button {
-                    width: 100% !important;
-                    aspect-ratio: 1/1 !important;
-                    border-radius: 4px !important;
-                    padding: 0px !important;
-                    box-shadow: none !important;
-                }
-            </style>
-        """, unsafe_allow_html=True)
+    # CSS KHUSUS UNTUK TOMBOL GRID AGAR TETAP KOTAK 4x4
+    st.markdown("""
+        <style>
+        div[data-testid="stHorizontalBlock"] {
+            display: grid !important;
+            grid-template-columns: repeat(4, 1fr) !important;
+            gap: 5px !important;
+            width: 100% !important;
+        }
+        div[data-testid="column"] {
+            width: 100% !important;
+            flex: none !important;
+        }
+        .stButton button {
+            width: 100% !important;
+            aspect-ratio: 1 / 1 !important;
+            padding: 0 !important;
+            border-radius: 4px !important;
+            box-shadow: none !important;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+
+    def next_level_logic():
+        st.session_state.corsi['score'] = st.session_state.corsi['level']
+        if st.session_state.corsi['level'] < 9:
+            st.session_state.corsi['level'] += 1
+            st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(st.session_state.corsi['level'] + 1)]
+            st.session_state.corsi['user_input'] = []
+            st.session_state.corsi['playing_sequence'] = True
+            st.session_state.corsi['lives'] = 2
+        else:
+            st.session_state.step = 5
+        st.rerun()
+
+    # PHASE 1: MENAMPILKAN URUTAN (BLINK)
+    if st.session_state.corsi['playing_sequence']:
+        st.warning("Perhatikan...")
+        grid_placeholder = st.empty()
         
-        # Render 4 Baris
+        for target in st.session_state.corsi['sequence']:
+            with grid_placeholder.container():
+                for r in range(4):
+                    cols = st.columns(4)
+                    for c in range(4):
+                        idx = r * 4 + c
+                        if idx == target:
+                            cols[c].button(" ", key=f"blink_{idx}_{time.time()}", type="primary", disabled=True)
+                        else:
+                            cols[c].button(" ", key=f"off_{idx}_{time.time()}", disabled=True)
+            time.sleep(0.8)
+            grid_placeholder.empty()
+            time.sleep(0.2)
+            
+        st.session_state.corsi['playing_sequence'] = False
+        st.rerun()
+
+    # PHASE 2: INPUT USER
+    else:
+        st.success("Giliran Anda! Klik kotak.")
         for r in range(4):
             cols = st.columns(4)
             for c in range(4):
                 idx = r * 4 + c
-                # Jika sedang blinking (target_id cocok)
-                if target_id is not None and idx == target_id and not is_off:
-                    cols[c].button(" ", key=f"grid_{idx}_{time.time()}", type="primary", disabled=True)
-                else:
-                    # Jika mode input user
-                    if not st.session_state.corsi['playing_sequence']:
-                        if cols[c].button(" ", key=f"btn_{idx}"):
-                            handle_click(idx)
-                    else:
-                        # Jika mode nonton sequence (tombol mati)
-                        cols[c].button(" ", key=f"view_{idx}_{time.time()}", disabled=True)
+                if cols[c].button(" ", key=f"btn_{idx}"):
+                    st.session_state.corsi['user_input'].append(idx)
+                    curr_step = len(st.session_state.corsi['user_input']) - 1
+                    
+                    if idx != st.session_state.corsi['sequence'][curr_step]:
+                        st.session_state.corsi['lives'] -= 1
+                        if st.session_state.corsi['lives'] > 0:
+                            st.error("Salah! Mengulang level ini...")
+                            time.sleep(1)
+                            st.session_state.corsi['user_input'] = []
+                            st.session_state.corsi['playing_sequence'] = True
+                        else:
+                            st.session_state.step = 5
+                        st.rerun()
+                    elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
+                        next_level_logic()
 
-    def handle_click(clicked_idx):
-        st.session_state.corsi['user_input'].append(clicked_idx)
-        curr = len(st.session_state.corsi['user_input']) - 1
-        if clicked_idx != st.session_state.corsi['sequence'][curr]:
-            st.session_state.corsi['lives'] -= 1
-            if st.session_state.corsi['lives'] > 0:
-                st.error("Salah! Ulangi.")
-                time.sleep(1)
-                st.session_state.corsi['user_input'] = []
-                st.session_state.corsi['playing_sequence'] = True
-            else:
-                st.session_state.step = 5
-            st.rerun()
-        elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
-            st.session_state.corsi['score'] = st.session_state.corsi['level']
-            if st.session_state.corsi['level'] < 9:
-                st.session_state.corsi['level'] += 1
-                st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(st.session_state.corsi['level'] + 1)]
-                st.session_state.corsi['user_input'] = []
-                st.session_state.corsi['playing_sequence'] = True
-                st.session_state.corsi['lives'] = 2
-            else:
-                st.session_state.step = 5
-            st.rerun()
-
-    if st.session_state.corsi['playing_sequence']:
-        placeholder = st.empty()
-        for target in st.session_state.corsi['sequence']:
-            with placeholder.container():
-                render_grid(target_id=target)
-            time.sleep(0.8)
-            with placeholder.container():
-                render_grid(target_id=target, is_off=True)
-            time.sleep(0.3)
-        st.session_state.corsi['playing_sequence'] = False
-        st.rerun()
-    else:
-        st.success("Giliran Anda!")
-        render
+elif st.session_state.step == 5:
+    st.header("Selesai!")
+    st.write("Terimakasih, data Anda telah tersimpan.")
+    if not st.session_state.sudah_simpan:
+        final_data = {
+            "Timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            **st.session_state.data_diri,
+            "Skor_Kuesioner": st.session_state.skor_kuesioner,
+            "Skor_Corsi": st.session_state.corsi['score']
+        }
+        save_to_google_sheets(final_data)
+        st.session_state.sudah_simpan = True
