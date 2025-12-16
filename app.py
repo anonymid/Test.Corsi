@@ -217,37 +217,82 @@ elif st.session_state.step == 4:
     # Logic untuk menampilkan sequence (Blink Biru)
     if st.session_state.corsi['playing_sequence']:
         placeholder = st.empty()
-        # Tampilkan urutan
         seq = st.session_state.corsi['sequence']
         
+        # 1. Tampilkan Grid Kosong Sebelum Mulai
         with placeholder.container():
-            st.warning("Perhatikan urutan! (Jangan klik dulu)")
-            # Grid kosong
+            st.warning("Perhatikan urutan...")
             cols = st.columns(4)
             for i in range(16):
-                cols[i%4].button("⬜", key=f"disp_{i}", disabled=True)
+                cols[i%4].button("", key=f"init_{i}", disabled=True)
             time.sleep(1)
 
+        # 2. Munculkan Kedipan Biru Satu per Satu
         for target_idx in seq:
-    with placeholder.container():
-        cols = st.columns(4)
-        for i in range(16):
-            # Gunakan type="primary" untuk warna biru (sudah diatur di CSS)
-            if i == target_idx:
-                cols[i%4].button("", key=f"blink_{i}_{time.time()}", type="primary")
-            else:
-                cols[i%4].button("", key=f"empty_{i}_{time.time()}")
-    time.sleep(0.8)
-            
-            # Matikan sebentar antar blink
             with placeholder.container():
+                st.warning("Perhatikan...")
                 cols = st.columns(4)
                 for i in range(16):
-                    cols[i%4].button("⬜", key=f"clear_{i}_{time.time()}", disabled=True)
+                    # Jika index sama dengan target, beri warna biru (type=primary)
+                    if i == target_idx:
+                        cols[i%4].button("", key=f"blink_{i}_{time.time()}", type="primary")
+                    else:
+                        cols[i%4].button("", key=f"bg_{i}_{time.time()}")
+            time.sleep(0.8) # Durasi lampu nyala
+            
+            # Matikan lampu sebentar antar kedipan
+            with placeholder.container():
+                st.warning("Perhatikan...")
+                cols = st.columns(4)
+                for i in range(16):
+                    cols[i%4].button("", key=f"off_{i}_{time.time()}")
             time.sleep(0.3)
             
         st.session_state.corsi['playing_sequence'] = False
         st.rerun()
+
+    # Logic Input User (Setelah kedipan selesai)
+    else:
+        st.success("Giliran Anda! Ulangi urutannya.")
+        
+        cols = st.columns(4)
+        for i in range(16):
+            if cols[i%4].button("", key=f"user_{i}"):
+                # User mengklik kotak
+                st.session_state.corsi['user_input'].append(i)
+                
+                # Cek apakah klik-an terakhir benar
+                idx_terakhir = len(st.session_state.corsi['user_input']) - 1
+                jawaban_benar = st.session_state.corsi['sequence'][idx_terakhir]
+                
+                if i != jawaban_benar:
+                    # JIKA SALAH
+                    st.session_state.corsi['lives'] -= 1
+                    if st.session_state.corsi['lives'] > 0:
+                        st.error("Salah! Silakan ulangi level ini.")
+                        time.sleep(1)
+                        st.session_state.corsi['user_input'] = []
+                        st.session_state.corsi['playing_sequence'] = True
+                        st.rerun()
+                    else:
+                        st.session_state.step = 5 # Game Over
+                        st.rerun()
+                
+                # JIKA BENAR DAN SUDAH SEMUA
+                elif len(st.session_state.corsi['user_input']) == len(st.session_state.corsi['sequence']):
+                    st.session_state.corsi['score'] = st.session_state.corsi['level']
+                    if st.session_state.corsi['level'] < 9:
+                        st.session_state.corsi['level'] += 1
+                        # Panjang urutan = level + 1 (Level 1: 2 blink, dst)
+                        new_len = st.session_state.corsi['level'] + 1 
+                        st.session_state.corsi['sequence'] = [random.randint(0, 15) for _ in range(new_len)]
+                        st.session_state.corsi['user_input'] = []
+                        st.session_state.corsi['playing_sequence'] = True
+                        st.session_state.corsi['lives'] = 2 
+                        st.rerun()
+                    else:
+                        st.session_state.step = 5 # Tamat
+                        st.rerun()
 
     # Logic User Input
     else:
