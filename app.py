@@ -12,44 +12,20 @@ st.set_page_config(page_title="Studi Responden", page_icon="🧠")
 # --- CSS CUSTOM (Agar tampilan Corsi 4x4 rapi di HP & Desktop) ---
 st.markdown("""
 <style>
-    /* Menghilangkan padding antar kolom Streamlit agar rapat */
-    [data-testid="column"] {
-        padding: 0 !important;
-        margin: 0 !important;
-    }
-
-    /* Styling tombol grid agar jadi kotak bersih */
+    [data-testid="column"] { padding: 0 !important; margin: 0 !important; }
     .stButton button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* Membuat kotak sempurna */
-        height: auto !important;
+        aspect-ratio: 1/1 !important;
+        border-radius: 0px !important;
+        border: 0.5px solid #ddd !important;
+        box-shadow: none !important; /* Hapus bayangan */
         margin: 0 !important;
-        padding: 0 !important;
-        border-radius: 0px !important; /* Kotak tajam, hilangkan lengkungan */
-        border: 1px solid #eeeeee !important; /* Garis tipis antar kotak */
-        background-color: #f0f2f6;
-        box-shadow: none !important; /* HILANGKAN SHADOW */
-        transition: none !important;
-        font-size: 0px !important; /* Hilangkan teks/emoji agar bersih */
     }
-
-    /* Efek saat tombol ditekan (jangan ada shadow/transform) */
-    .stButton button:active, .stButton button:focus, .stButton button:hover {
-        border: 1px solid #eeeeee !important;
-        box-shadow: none !important;
-        color: transparent !important;
-        background-color: #f0f2f6; /* Warna default saat hover */
-    }
-
-    /* Warna Blink Biru (Saat sequence tampil) */
-    div.stButton > button[kind="primary"] {
-        background-color: #0000FF !important; /* Biru pekat */
-        border: none !important;
+    /* Tombol Biru saat Blink */
+    button[kind="primary"] {
+        background-color: blue !important;
         box-shadow: none !important;
     }
-
-    /* Warna Blink Hijau (Feedback klik user) */
-    /* Kita gunakan trik CSS untuk mendeteksi klik jika perlu */
 </style>
 """, unsafe_allow_html=True)
 
