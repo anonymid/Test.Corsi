@@ -7,6 +7,7 @@ import random
 st.set_page_config(page_title="Tes Corsi Lite", layout="centered")
 
 # --- URL SCRIPT GOOGLE KAMU ---
+# Pastikan URL ini benar
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- INIT STATE ---
@@ -27,80 +28,47 @@ def send_data(data):
         return False
 
 # --- FUNGSI HTML VISUAL (KOMPUTER MAIN) ---
+# PERBAIKAN: String HTML dibuat rapat 1 baris supaya tidak dianggap 'Code Block'
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Kita pakai float left biar di HP pun dia maksa jejer ke samping
-        boxes += f"""
-        <div style="
-            float: left;
-            width: 23%; 
-            margin: 1%;
-            height: 60px;
-            background-color: {color};
-            border-radius: 6px;
-            border: 2px solid #999;
-            box-sizing: border-box;
-        "></div>
-        """
-    # Clear float di akhir container
+        # HTML ditulis nyambung terus ke kanan tanpa enter
+        boxes += f'<div style="float:left; width:23%; margin:1%; height:60px; background-color:{color}; border-radius:6px; border:2px solid #999; box-sizing:border-box;"></div>'
+    
     return f'<div style="width:100%; overflow:hidden; margin-bottom:15px;">{boxes}</div>'
 
 # --- FUNGSI TOMBOL INTERAKTIF (USER MAIN) ---
-# INI BAGIAN YANG MEMPERBAIKI TAMPILAN HP
+# CSS KHUSUS AGAR DI HP TETAP 4 KOLOM
 def render_buttons():
     st.markdown("""
     <style>
-    /* 1. PAKSA KOLOM JADI 25% WALAUPUN DI HP */
-    div[data-testid="column"] {
-        width: 25% !important;
-        flex: 0 0 25% !important;
-        min-width: 0px !important; /* INI KUNCINYA AGAR TIDAK TUMPUK */
-        padding: 1px !important;
-    }
-    
-    /* 2. HAPUS GAP DEFAULT STREAMLIT */
-    div[data-testid="column"] > div {
-        width: 100% !important;
-    }
-
-    /* 3. BIKIN TOMBOL KOTAK & RAPI */
-    div.stButton > button {
-        width: 100% !important;
-        aspect-ratio: 1 / 1; /* Biar tetap persegi */
-        height: auto !important; 
-        padding: 0px !important;
-        border-radius: 5px;
-        border: 2px solid #bbb;
-    }
-    
+    /* Paksa kolom jadi 25% lebar layar HP */
+    div[data-testid="column"] { width: 25% !important; flex: 0 0 25% !important; min-width: 0 !important; padding: 1px !important; }
+    /* Hapus gap */
+    div[data-testid="column"] > div { width: 100% !important; }
+    /* Tombol jadi kotak */
+    div.stButton > button { width: 100% !important; aspect-ratio: 1/1; height: auto !important; padding: 0 !important; border-radius: 5px; border: 2px solid #bbb; }
     /* Efek Klik */
-    div.stButton > button:active {
-        background-color: #007bff;
-        color: white;
-    }
+    div.stButton > button:active { background-color: #007bff; color: white; }
     </style>
     """, unsafe_allow_html=True)
     
-    # Render Grid 4x4
-    # Kita pakai container biasa, CSS di atas yang akan ngatur layoutnya
     with st.container():
         for row in range(4):
-            cols = st.columns(4) # CSS di atas akan memaksa ini tetap 4 kolom di HP
+            cols = st.columns(4)
             for col in range(4):
                 idx = row * 4 + col
-                # Tombol spasi kosong agar tidak ada teks mengganggu
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
 
 # --- HALAMAN 1: WELCOME & DATA ---
 if st.session_state.page == "welcome":
-    st.title("Tes Memori (Versi HP Fix)")
-    st.info("Coba buka di HP, harusnya kotaknya sekarang rapi 4x4.")
+    st.title("Tes Memori")
+    st.info("Versi Final: Visual Fix + HP 4 Kolom")
     
     with st.form("test_form"):
-        nama = st.text_input("Nama")
-        wa = st.text_input("WA")
+        nama = st.text_input("Nama Inisial")
+        wa = st.text_input("No WA")
         if st.form_submit_button("Mulai Tes"):
             st.session_state.user_data = {"inisial": nama, "wa": wa}
             st.session_state.page = "corsi_game"
@@ -115,6 +83,7 @@ elif st.session_state.page == "corsi_game":
     if st.session_state.corsi_phase == "idle":
         with layar.container():
             st.write("Hafalkan urutan biru!")
+            # Panggil get_html dengan unsafe_allow_html=True
             st.markdown(get_html(None), unsafe_allow_html=True)
             if st.button("Mulai Level Ini", type="primary"):
                 st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
@@ -127,9 +96,9 @@ elif st.session_state.page == "corsi_game":
         layar.markdown(get_html(None), unsafe_allow_html=True)
         time.sleep(0.5)
         for item in st.session_state.corsi_sequence:
-            layar.markdown(get_html(item), unsafe_allow_html=True)
+            layar.markdown(get_html(item), unsafe_allow_html=True) # Nyala
             time.sleep(0.8)
-            layar.markdown(get_html(None), unsafe_allow_html=True)
+            layar.markdown(get_html(None), unsafe_allow_html=True) # Mati
             time.sleep(0.3)
         st.session_state.corsi_phase = "input"
         st.rerun()
@@ -137,8 +106,8 @@ elif st.session_state.page == "corsi_game":
     # INPUT
     elif st.session_state.corsi_phase == "input":
         layar.empty()
-        st.success("Giliran Kamu! (Klik tombol di bawah)")
-        render_buttons() # Panggil Grid Fix HP
+        st.success("Giliran Kamu! (Klik tombol)")
+        render_buttons() 
 
         # Cek Jawaban
         if len(st.session_state.corsi_user_input) > 0:
@@ -172,7 +141,7 @@ elif st.session_state.page == "saving":
     
     if send_data(payload):
         status.empty()
-        st.success("Data Masuk! Cek Sheet.")
+        st.success("Data Tersimpan! Terima kasih.")
         if st.button("Ulang"):
             st.session_state.clear()
             st.rerun()
