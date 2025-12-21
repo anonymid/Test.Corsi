@@ -183,17 +183,17 @@ elif st.session_state.page == "corsi_game":
     # Apapun yang kita tulis ke 'layar_utama', akan menimpa isi sebelumnya.
     layar_utama = st.empty()
 
-    # --- FUNGSI HTML SATU BARIS (Supaya aman dari error) ---
+    # --- FUNGSI HTML VISUAL (FIX UNTUK KOTAK YANG JADI TEKS) ---
     def get_html(highlight_idx=None):
         boxes = ""
         for i in range(16):
-            # Warna: Biru Terang (#007bff) vs Abu-abu (#e0e0e0)
             color = "#007bff" if i == highlight_idx else "#e0e0e0"
-            # CSS Border juga kita tebalkan saat nyala biar makin jelas
             border = "3px solid #0056b3" if i == highlight_idx else "2px solid #bbb"
             
+            # PENTING: String di bawah ini JANGAN diputus/dienter. Biarkan memanjang ke kanan.
             boxes += f'<div style="background-color:{color}; border-radius:8px; border:{border}; height:70px; transition: background-color 0.1s;"></div>'
         
+        # Container juga jangan dienter
         return f'<div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:10px; margin-bottom:20px;">{boxes}</div>'
 
     # --- FUNGSI INPUT TOMBOL (Saat giliran user) ---
@@ -324,25 +324,32 @@ elif st.session_state.page == "corsi_game":
                 st.rerun()
 
 # ==========================================
-# SLIDE 6: SIMPAN DATA & TERIMAKASIH
+# SLIDE 6: SIMPAN DATA & TERIMAKASIH (FIX)
 # ==========================================
 elif st.session_state.page == "saving":
     st.header("Penelitian Selesai")
-    st.write("Sedang menyimpan data Anda...")
     
-    # Gabungkan semua data
+    # 1. Buat Placeholder (Wadah Sementara)
+    status_text = st.empty()
+    
+    # 2. Tulis pesan loading ke dalam wadah itu
+    status_text.info("Sedang menyimpan data Anda... Mohon tunggu.")
+    
+    # Siapkan data
     final_payload = st.session_state.user_data.copy()
     final_payload['skorCorsi'] = st.session_state.corsi_score
     
-    # Debug: Print data (bisa dihapus nanti)
-    # st.json(final_payload)
-    
-    # Kirim ke Google Script
-    with st.spinner('Mengirim data ke server...'):
+    # Kirim data
+    with st.spinner('Menghubungi server...'):
         success = send_data_to_google_script(final_payload)
     
     if success:
+        # 3. HAPUS tulisan "Sedang menyimpan..."
+        status_text.empty() 
+        
+        # Tampilkan pesan sukses
         st.success("Data berhasil disimpan!")
+        
         st.markdown("""
         ### Terimakasih!
         Jawaban Anda telah kami terima. Kami akan menghubungi nomor Whatsapp Anda 
@@ -350,9 +357,10 @@ elif st.session_state.page == "saving":
         
         Silakan tutup tab browser ini.
         """)
-        st.session_state.page = "done" # Stop loop
+        st.session_state.page = "done" 
     else:
-        st.error("Gagal menyimpan data. Mohon periksa koneksi internet Anda.")
+        # Jika gagal, update status text jadi error
+        status_text.error("Gagal menyimpan data. Mohon periksa koneksi internet Anda.")
         if st.button("Coba Kirim Lagi"):
             st.rerun()
 
