@@ -26,23 +26,26 @@ def send_data(data):
     except:
         return False
 
-# --- CSS SUPER KETAT: ANTI SCROLL & ANTI PERSEGI PANJANG ---
+# --- CSS: PAKSA UKURAN KECIL (300px) & TENGAH ---
 st.markdown("""
 <style>
-    /* 1. TIPISKAN PADDING HALAMAN UTAMA BIAR MUAT DI HP */
+    /* 1. KUNCI LEBAR KONTEN AGAR TIDAK MELEBAR (ANTI SCROLL SAMPING) */
     .block-container {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-        padding-top: 1rem !important;
-        padding-bottom: 1rem !important;
+        padding: 1rem 0.5rem !important; /* Padding tipis */
         max-width: 100% !important;
     }
     
     /* 2. HEADER KECIL */
-    h1 { font-size: 1.2rem !important; }
+    h1 { font-size: 1.2rem !important; text-align: center; }
+    p, div { font-size: 0.9rem !important; }
     
-    /* 3. HILANGKAN JARAK ANTAR ELEMENT */
-    div[data-testid="stVerticalBlock"] { gap: 0.2rem !important; }
+    /* 3. WADAH GRID: DIKUNCI MAX 300px DAN DI-TENGAH-KAN */
+    /* Ini trik biar di HP gak kegedean */
+    div[data-testid="stVerticalBlock"] > div {
+        margin-left: auto !important;
+        margin-right: auto !important;
+        max-width: 320px !important; /* KUNCI LEBAR DISINI */
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -51,42 +54,39 @@ def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Kita pakai width 23% + margin 1% = total 25% per item. Pas 100%.
-        # height: 0 dan padding-bottom: 23% adalah trik CSS kuno untuk membuat kotak persegi responsif
-        boxes += f'<div style="float:left; width:22%; margin:1.5%; padding-bottom:22%; background-color:{color}; border-radius:6px; border:2px solid #999; height:0;"></div>'
+        # Ukuran fix dalam persen relatif terhadap wadah 320px tadi
+        boxes += f'<div style="float:left; width:22%; margin:1.5%; padding-bottom:22%; background-color:{color}; border-radius:5px; border:2px solid #999; height:0;"></div>'
     
+    # Wadah ini akan mengikuti max-width 320px dari CSS di atas
     return f'<div style="width:100%; overflow:hidden; margin-bottom:10px;">{boxes}</div>'
 
 # --- FUNGSI TOMBOL INTERAKTIF (USER MAIN) ---
 def render_buttons():
     st.markdown("""
     <style>
-    /* 1. CONTAINER WAJIB ROW */
+    /* PAKSA ROW */
     div[data-testid="stHorizontalBlock"] {
         flex-direction: row !important;
         flex-wrap: nowrap !important;
-        gap: 0.2rem !important; /* Jarak antar kolom tipis */
+        gap: 2px !important;
     }
     
-    /* 2. KOLOM 25% */
+    /* PAKSA KOLOM */
     div[data-testid="column"] {
         width: 25% !important;
         flex: 1 1 25% !important;
         min-width: 0 !important;
         padding: 0 !important;
-        margin: 0 !important;
     }
 
-    /* 3. TOMBOL: WAJIB PERSEGI (1:1) */
+    /* TOMBOL KOTAK 1:1 */
     div.stButton > button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* KUNCI BENTUK KOTAK SEMPURNA */
+        aspect-ratio: 1 / 1 !important;
         height: auto !important;
         padding: 0 !important;
-        margin: 0 !important;
-        border-radius: 6px;
+        border-radius: 5px;
         border: 2px solid #bbb;
-        line-height: 0 !important;
     }
     
     div.stButton > button:active { background-color: #007bff; color: white; }
@@ -103,19 +103,20 @@ def render_buttons():
 
 # --- HALAMAN 1: WELCOME ---
 if st.session_state.page == "welcome":
-    st.title("Tes Memori (Square Fix)")
-    st.caption("Versi Kotak Sempurna Tanpa Scroll")
+    st.title("Tes Memori (Mini)")
+    st.caption("Versi 300px Fixed (Muat Semua HP)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
-        if st.form_submit_button("Mulai"):
+        if st.form_submit_button("Mulai", use_container_width=True):
             st.session_state.user_data = {"inisial": nama, "wa": wa}
             st.session_state.page = "corsi_game"
             st.rerun()
 
 # --- HALAMAN 2: GAME ---
 elif st.session_state.page == "corsi_game":
-    st.markdown(f"**Level: {st.session_state.corsi_level - 1}**")
+    # Header level di tengah
+    st.markdown(f"<h4 style='text-align:center; margin:0;'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
 
     # IDLE
@@ -172,15 +173,3 @@ elif st.session_state.page == "saving":
     st.header("Selesai")
     status = st.empty()
     status.info("Simpan...")
-    
-    payload = st.session_state.user_data
-    payload['skorCorsi'] = st.session_state.corsi_level - 1
-    
-    if send_data(payload):
-        status.empty()
-        st.success("Tersimpan!")
-        if st.button("Ulang"):
-            st.session_state.clear()
-            st.rerun()
-    else:
-        status.error("Gagal.")
