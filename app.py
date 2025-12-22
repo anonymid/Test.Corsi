@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Final Fix", layout="centered")
+st.set_page_config(page_title="Corsi Grid Fix", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,64 +23,75 @@ def send_data(data):
     except:
         return False
 
-# --- CSS ANTI-ERROR & ANTI-JUMBO ---
+# --- CSS GRID SYSTEM (JURUS TERAKHIR) ---
 st.markdown("""
 <style>
-    /* 1. HAPUS PADDING BIAR LEGA */
-    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; }
+    /* 1. BERSIHKAN LAYAR */
+    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
     
-    /* 2. TENGAHKAN SEMUA */
-    div[data-testid="stVerticalBlock"] { align-items: center; text-align: center; }
-    
-    /* 3. TOMBOL (JAWABAN) DIKUNCI MATI UKURANNYA */
-    /* Ini biar gak melar jadi raksasa di HP */
+    /* 2. UBAH CONTAINER TOMBOL JADI 'CSS GRID' (BUKAN FLEXBOX LAGI) */
+    /* Ini kuncinya: Memaksa layout jadi 4 kolom presisi */
+    div[data-testid="stHorizontalBlock"] {
+        display: grid !important;
+        grid-template-columns: repeat(4, 1fr) !important; /* WAJIB 4 KOLOM */
+        gap: 5px !important; /* Jarak antar tombol 5px */
+        max-width: 280px !important; /* Batasi lebar total HP biar gak jauh-jauhan */
+        margin: 0 auto !important; /* Posisi Tengah */
+    }
+
+    /* 3. RESET KOLOM BAWAAN STREAMLIT */
+    div[data-testid="column"] {
+        width: auto !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* 4. STYLE TOMBOL */
     div.stButton > button {
-        width: 50px !important;
-        height: 50px !important;
-        min-width: 50px !important;
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important; /* Kotak Sempurna */
+        height: auto !important;
         padding: 0 !important;
         border-radius: 6px;
         border: 2px solid #bbb;
-        margin: 2px !important;
     }
     div.stButton > button:active { background-color: #007bff; color: white; }
-
-    /* 4. PAKSA 4 KOLOM (JANGAN TURUN KE BAWAH) */
-    div[data-testid="column"] {
-        width: auto !important;
-        flex: 0 0 auto !important;
-        min-width: 0 !important;
-        padding: 0 !important;
-    }
     
-    /* 5. RAPATKAN GRID TOMBOL */
-    div[data-testid="stHorizontalBlock"] {
-        justify-content: center !important;
-        gap: 0px !important;
-        flex-wrap: nowrap !important; /* HARAM TURUN BARIS */
-    }
+    /* Hapus margin button */
+    div.stButton { margin: 0 !important; }
+    
 </style>
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# FIX: SAYA HAPUS INDENTASI DAN MULTILINE STRING
-# HTML ditulis satu baris lurus biar gak muncul teksnya
+# Dibuat persis sama dengan ukuran grid tombol (Max 280px)
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Style ditulis rapat tanpa spasi
-        boxes += f'<div style="float:left;width:50px;height:50px;margin:2px;background-color:{color};border-radius:6px;border:2px solid #999;"></div>'
+        # HTML Grid juga pakai teknik yang sama
+        boxes += f'<div style="width:100%;aspect-ratio:1/1;background-color:{color};border-radius:6px;border:2px solid #999;"></div>'
     
-    # Bungkus wadah selebar (50px+4px)*4 = ~220px. Center.
-    return f'<div style="width:220px;margin:0 auto 20px auto;overflow:hidden;">{boxes}</div>'
+    # Grid HTML Container
+    return f"""
+    <div style="
+        display:grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 5px;
+        max-width: 280px;
+        margin: 0 auto 20px auto;
+    ">
+        {boxes}
+    </div>
+    """
 
 # --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
-    # Grid dibuat manual pakai container biar kena CSS Global
+    # Cukup panggil st.columns, CSS Grid di atas yang akan mengambil alih layoutnya
     with st.container():
         for row in range(4):
-            cols = st.columns(4)
+            cols = st.columns(4) # Walaupun ini Streamlit Columns, CSS kita akan mengubahnya jadi GRID
             for col in range(4):
                 idx = row * 4 + col
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
@@ -88,7 +99,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.caption("Versi Final Anti-Bug")
+    st.write("Versi CSS Grid (4 Kolom Paksa)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
@@ -99,19 +110,18 @@ if st.session_state.page == "welcome":
 
 # --- PAGE 2: GAME ---
 elif st.session_state.page == "corsi_game":
-    st.markdown(f"**Level: {st.session_state.corsi_level - 1}**")
+    st.markdown(f"<h4 style='text-align:center'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
 
     if st.session_state.corsi_phase == "idle":
         with layar.container():
-            st.info("Hafalkan biru!")
-            # Render HTML Soal
+            st.info("Hafalkan urutan biru!")
             st.markdown(get_html(None), unsafe_allow_html=True)
             
             # Tombol Mulai
             col1, col2, col3 = st.columns([1,2,1])
             with col2:
-                if st.button("Mulai Level", type="primary"):
+                if st.button("Mulai", type="primary", use_container_width=True):
                     st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
                     st.session_state.corsi_user_input = []
                     st.session_state.corsi_phase = "showing"
