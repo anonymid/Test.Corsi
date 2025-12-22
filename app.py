@@ -23,38 +23,36 @@ def send_data(data):
     except:
         return False
 
-# --- CSS: ATURAN TUNGGAL (SINGLE SOURCE OF TRUTH) ---
+# --- CSS "MASTER LAYOUT" ---
+# Bagian ini mengatur agar HTML (Soal) dan Tombol (Jawaban) punya ukuran SAMA PERSIS.
 st.markdown("""
 <style>
-    /* 1. BERSIHKAN LAYAR */
+    /* 1. SETUP LAYAR */
     .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
 
-    /* =============================================
-       JURUS UTAMA: KUNCI LEBAR CONTAINER GRID
-       Ini mengatur container tombol (Streamlit)
-       ============================================= */
+    /* 2. UKURAN "PAPAN GAME" (CONTAINER UTAMA) */
+    /* Ini berlaku untuk wadah tombol Streamlit */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important; /* 4 Kolom Rata */
+        grid-template-columns: repeat(4, 1fr) !important;
         gap: 10px !important;      /* Jarak antar kotak */
         margin: 0 auto !important; /* Posisi Tengah */
         width: 100% !important;
     }
 
-    /* A. SETTINGAN HP (Layar < 600px) */
+    /* --- ATURAN UKURAN RESPONSIF --- */
+    
+    /* A. HP (Layar Kecil): Lebar 300px */
     @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 320px !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 300px !important; }
     }
 
-    /* B. SETTINGAN PC (Layar > 600px) */
-    /* Kita kunci di 460px biar gak renggang/pecah */
+    /* B. PC (Layar Besar): Lebar 500px (BIAR GEDE) */
     @media (min-width: 601px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 460px !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 500px !important; }
     }
 
-    /* =============================================
-       STYLE TOMBOL
-       ============================================= */
+    /* 3. RESET TOMBOL STREAMLIT BIAR NURUT SAMA GRID DI ATAS */
     div[data-testid="column"] {
         width: auto !important;
         min-width: 0 !important;
@@ -63,7 +61,7 @@ st.markdown("""
     }
 
     div.stButton > button {
-        width: 100% !important;
+        width: 100% !important;      /* Menuhin Grid */
         aspect-ratio: 1 / 1 !important; /* Wajib Kotak */
         height: auto !important;
         min-height: 0 !important;
@@ -79,15 +77,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# Menggunakan Logic CSS yang SAMA PERSIS dengan tombol di atas
+# Menggunakan logic ukuran yang sama persis
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
         boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:6px; border:2px solid #999; width:100%;"></div>'
     
-    # KITA GUNAKAN STYLE INLINE YANG SINKRON DENGAN CSS DI ATAS
-    # max-width diatur lewat media query style tag di bawah
     return f"""
     <div class="soal-container">
         <style>
@@ -96,16 +92,11 @@ def get_html(highlight_idx=None):
                 grid-template-columns: repeat(4, 1fr); 
                 gap: 10px; 
                 width: 100%;
-                margin: 0 auto 20px auto; /* Tengah */
+                margin: 0 auto 20px auto; 
             }}
-            /* SINKRONISASI UKURAN HP */
-            @media (max-width: 600px) {{ 
-                .soal-container {{ max-width: 320px !important; }} 
-            }}
-            /* SINKRONISASI UKURAN PC */
-            @media (min-width: 601px) {{ 
-                .soal-container {{ max-width: 460px !important; }} 
-            }}
+            /* SINKRONISASI UKURAN SAMA PERSIS DENGAN CSS TOMBOL DI ATAS */
+            @media (max-width: 600px) {{ .soal-container {{ max-width: 300px !important; }} }}
+            @media (min-width: 601px) {{ .soal-container {{ max-width: 500px !important; }} }}
         </style>
         {boxes}
     </div>
@@ -113,6 +104,7 @@ def get_html(highlight_idx=None):
 
 # --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
+    # Container ini akan otomatis kena CSS grid di atas
     with st.container():
         for row in range(4):
             cols = st.columns(4) 
@@ -123,7 +115,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.caption("Versi Sync PC & HP")
+    st.write("Versi Final: PC Besar & Rapat")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
