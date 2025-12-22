@@ -3,8 +3,8 @@ import requests
 import time
 import random
 
-# --- SETUP HALAMAN (COMPACT) ---
-st.set_page_config(page_title="Tes Corsi Fix", layout="centered")
+# --- SETUP HALAMAN ---
+st.set_page_config(page_title="Tes Corsi Final", layout="centered")
 
 # --- URL GOOGLE SCRIPT ---
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
@@ -26,14 +26,23 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL: PAKSA TAMPILAN COMPACT ---
+# --- CSS SUPER KETAT: ANTI SCROLL & ANTI PERSEGI PANJANG ---
 st.markdown("""
 <style>
-    /* Hapus margin atas yang boros tempat */
-    .block-container { padding-top: 1rem !important; padding-bottom: 1rem !important; }
-    /* Kecilkan header */
-    h1 { font-size: 1.2rem !important; margin-bottom: 0 !important; }
-    div[data-testid="stVerticalBlock"] { gap: 0.5rem !important; }
+    /* 1. TIPISKAN PADDING HALAMAN UTAMA BIAR MUAT DI HP */
+    .block-container {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+        padding-top: 1rem !important;
+        padding-bottom: 1rem !important;
+        max-width: 100% !important;
+    }
+    
+    /* 2. HEADER KECIL */
+    h1 { font-size: 1.2rem !important; }
+    
+    /* 3. HILANGKAN JARAK ANTAR ELEMENT */
+    div[data-testid="stVerticalBlock"] { gap: 0.2rem !important; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -42,53 +51,60 @@ def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Tinggi fix 50px biar kecil
-        boxes += f'<div style="float:left; width:22%; margin:1.5%; height:50px; background-color:{color}; border-radius:6px; border:2px solid #999; box-sizing:border-box;"></div>'
-    return f'<div style="width:100%; overflow:hidden; margin-bottom:5px;">{boxes}</div>'
+        # Kita pakai width 23% + margin 1% = total 25% per item. Pas 100%.
+        # height: 0 dan padding-bottom: 23% adalah trik CSS kuno untuk membuat kotak persegi responsif
+        boxes += f'<div style="float:left; width:22%; margin:1.5%; padding-bottom:22%; background-color:{color}; border-radius:6px; border:2px solid #999; height:0;"></div>'
+    
+    return f'<div style="width:100%; overflow:hidden; margin-bottom:10px;">{boxes}</div>'
 
 # --- FUNGSI TOMBOL INTERAKTIF (USER MAIN) ---
 def render_buttons():
     st.markdown("""
     <style>
-    /* 1. PAKSA CONTAINER JADI BARIS (ROW) - INI KUNCINYA */
+    /* 1. CONTAINER WAJIB ROW */
     div[data-testid="stHorizontalBlock"] {
         flex-direction: row !important;
         flex-wrap: nowrap !important;
+        gap: 0.2rem !important; /* Jarak antar kolom tipis */
     }
     
-    /* 2. PAKSA KOLOM JADI 25% (TIDAK BOLEH TURUN) */
+    /* 2. KOLOM 25% */
     div[data-testid="column"] {
         width: 25% !important;
         flex: 1 1 25% !important;
-        min-width: 0px !important; /* Mencegah kolom membesar */
-        padding: 2px !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+        margin: 0 !important;
     }
 
-    /* 3. TOMBOL KECIL (COMPACT) */
+    /* 3. TOMBOL: WAJIB PERSEGI (1:1) */
     div.stButton > button {
         width: 100% !important;
-        height: 50px !important; /* KUNCI MATI TINGGI 50PX */
-        min-height: 50px !important;
+        aspect-ratio: 1 / 1 !important; /* KUNCI BENTUK KOTAK SEMPURNA */
+        height: auto !important;
         padding: 0 !important;
-        border: 2px solid #bbb;
+        margin: 0 !important;
         border-radius: 6px;
+        border: 2px solid #bbb;
+        line-height: 0 !important;
     }
+    
     div.stButton > button:active { background-color: #007bff; color: white; }
-    div.stButton { margin-bottom: 0px; }
+    div.stButton { margin: 0 !important; width: 100% !important; }
     </style>
     """, unsafe_allow_html=True)
     
     with st.container():
         for row in range(4):
-            cols = st.columns(4) # CSS di atas memaksa ini tetap 4 kolom
+            cols = st.columns(4)
             for col in range(4):
                 idx = row * 4 + col
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
 
 # --- HALAMAN 1: WELCOME ---
 if st.session_state.page == "welcome":
-    st.title("Tes Memori (Lite)")
-    st.caption("Versi HP Compact Fix")
+    st.title("Tes Memori (Square Fix)")
+    st.caption("Versi Kotak Sempurna Tanpa Scroll")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
