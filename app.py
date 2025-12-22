@@ -3,13 +3,11 @@ import requests
 import time
 import random
 
-# --- SETUP HALAMAN ---
-st.set_page_config(page_title="Tes Corsi Final", layout="centered")
-
-# --- URL GOOGLE SCRIPT ---
+# --- SETUP ---
+st.set_page_config(page_title="Tes Corsi Pixel Fix", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
-# --- INIT STATE ---
+# --- STATE ---
 if 'page' not in st.session_state: st.session_state.page = "welcome"
 if 'user_data' not in st.session_state: st.session_state.user_data = {}
 if 'corsi_level' not in st.session_state: st.session_state.corsi_level = 2
@@ -18,7 +16,7 @@ if 'corsi_user_input' not in st.session_state: st.session_state.corsi_user_input
 if 'corsi_phase' not in st.session_state: st.session_state.corsi_phase = "idle"
 if 'corsi_lives' not in st.session_state: st.session_state.corsi_lives = 1
 
-# --- FUNGSI KIRIM DATA ---
+# --- KIRIM DATA ---
 def send_data(data):
     try:
         requests.post(GOOGLE_SCRIPT_URL, json=data)
@@ -26,85 +24,72 @@ def send_data(data):
     except:
         return False
 
-# --- CSS: PAKSA UKURAN KECIL (300px) & TENGAH ---
+# --- CSS KHUSUS: KUNCI MATI UKURAN (PIXEL) ---
 st.markdown("""
 <style>
-    /* 1. KUNCI LEBAR KONTEN AGAR TIDAK MELEBAR (ANTI SCROLL SAMPING) */
-    .block-container {
-        padding: 1rem 0.5rem !important; /* Padding tipis */
-        max-width: 100% !important;
+    /* 1. BERSIHKAN PADDING HALAMAN BIAR GAK SUMPEK */
+    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; }
+    
+    /* 2. SEMUA ISI DI-TENGAH-KAN */
+    div[data-testid="stVerticalBlock"] { align-items: center; }
+    
+    /* 3. UBAH TOMBOL JADI KOTAK KECIL FIX (55px) */
+    div.stButton > button {
+        width: 55px !important;  /* LEBAR FIX */
+        height: 55px !important; /* TINGGI FIX */
+        min-width: 55px !important;
+        min-height: 55px !important;
+        padding: 0 !important;
+        border-radius: 8px;
+        border: 2px solid #bbb;
+        margin: 2px !important; /* Jarak antar tombol */
+    }
+    div.stButton > button:active { background-color: #007bff; color: white; }
+    
+    /* 4. MENGECILKAN KOLOM STREAMLIT AGAR PAS DENGAN TOMBOL */
+    div[data-testid="column"] {
+        width: auto !important;
+        flex: 0 0 auto !important;
+        min-width: 0 !important;
+        padding: 0 !important;
     }
     
-    /* 2. HEADER KECIL */
-    h1 { font-size: 1.2rem !important; text-align: center; }
-    p, div { font-size: 0.9rem !important; }
-    
-    /* 3. WADAH GRID: DIKUNCI MAX 300px DAN DI-TENGAH-KAN */
-    /* Ini trik biar di HP gak kegedean */
-    div[data-testid="stVerticalBlock"] > div {
-        margin-left: auto !important;
-        margin-right: auto !important;
-        max-width: 320px !important; /* KUNCI LEBAR DISINI */
+    /* 5. TENGAHKAN GRID TOMBOL */
+    div[data-testid="stHorizontalBlock"] {
+        justify-content: center !important;
+        gap: 0px !important;
     }
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI HTML VISUAL (KOMPUTER MAIN) ---
+# --- FUNGSI VISUAL (SOAL) - KITA SAMAKAN JADI 55px ---
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Ukuran fix dalam persen relatif terhadap wadah 320px tadi
-        boxes += f'<div style="float:left; width:22%; margin:1.5%; padding-bottom:22%; background-color:{color}; border-radius:5px; border:2px solid #999; height:0;"></div>'
+        # Disini kita pakai pixel (55px) juga biar sama persis kayak tombol
+        boxes += f'<div style="float:left; width:55px; height:55px; margin:2px; background-color:{color}; border-radius:8px; border:2px solid #999; box-sizing:border-box;"></div>'
     
-    # Wadah ini akan mengikuti max-width 320px dari CSS di atas
-    return f'<div style="width:100%; overflow:hidden; margin-bottom:10px;">{boxes}</div>'
+    # Bungkus dalam wadah selebar (55px + 4px margin) * 4 = ~240px. Center align.
+    return f'<div style="width:240px; margin:0 auto 15px auto; overflow:hidden;">{boxes}</div>'
 
-# --- FUNGSI TOMBOL INTERAKTIF (USER MAIN) ---
+# --- FUNGSI TOMBOL (JAWABAN) ---
 def render_buttons():
-    st.markdown("""
-    <style>
-    /* PAKSA ROW */
-    div[data-testid="stHorizontalBlock"] {
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        gap: 2px !important;
-    }
-    
-    /* PAKSA KOLOM */
-    div[data-testid="column"] {
-        width: 25% !important;
-        flex: 1 1 25% !important;
-        min-width: 0 !important;
-        padding: 0 !important;
-    }
-
-    /* TOMBOL KOTAK 1:1 */
-    div.stButton > button {
-        width: 100% !important;
-        aspect-ratio: 1 / 1 !important;
-        height: auto !important;
-        padding: 0 !important;
-        border-radius: 5px;
-        border: 2px solid #bbb;
-    }
-    
-    div.stButton > button:active { background-color: #007bff; color: white; }
-    div.stButton { margin: 0 !important; width: 100% !important; }
-    </style>
-    """, unsafe_allow_html=True)
-    
+    # Grid 4x4
+    # Kita pakai container biasa, CSS di atas yang akan maksa ukurannya jadi 55px
     with st.container():
         for row in range(4):
+            # Buat 4 kolom
             cols = st.columns(4)
             for col in range(4):
                 idx = row * 4 + col
-                cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
+                # Tombol Kosong
+                cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
 
 # --- HALAMAN 1: WELCOME ---
 if st.session_state.page == "welcome":
-    st.title("Tes Memori (Mini)")
-    st.caption("Versi 300px Fixed (Muat Semua HP)")
+    st.title("Tes Memori")
+    st.caption("Versi Pixel Fix (Ukuran Dijamin Sama)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
@@ -115,8 +100,7 @@ if st.session_state.page == "welcome":
 
 # --- HALAMAN 2: GAME ---
 elif st.session_state.page == "corsi_game":
-    # Header level di tengah
-    st.markdown(f"<h4 style='text-align:center; margin:0;'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
+    st.markdown(f"<h4 style='text-align:center;'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
 
     # IDLE
@@ -124,11 +108,14 @@ elif st.session_state.page == "corsi_game":
         with layar.container():
             st.caption("Hafalkan urutan biru!")
             st.markdown(get_html(None), unsafe_allow_html=True)
-            if st.button("Mulai Level Ini", type="primary", use_container_width=True):
-                st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
-                st.session_state.corsi_user_input = []
-                st.session_state.corsi_phase = "showing"
-                st.rerun()
+            # Tombol Mulai (kecil & center)
+            col1, col2, col3 = st.columns([1,2,1])
+            with col2:
+                if st.button("Mulai Level Ini", type="primary", use_container_width=True):
+                    st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
+                    st.session_state.corsi_user_input = []
+                    st.session_state.corsi_phase = "showing"
+                    st.rerun()
 
     # SHOWING
     elif st.session_state.corsi_phase == "showing":
@@ -173,3 +160,15 @@ elif st.session_state.page == "saving":
     st.header("Selesai")
     status = st.empty()
     status.info("Simpan...")
+    
+    payload = st.session_state.user_data
+    payload['skorCorsi'] = st.session_state.corsi_level - 1
+    
+    if send_data(payload):
+        status.empty()
+        st.success("Tersimpan!")
+        if st.button("Ulang"):
+            st.session_state.clear()
+            st.rerun()
+    else:
+        status.error("Gagal.")
