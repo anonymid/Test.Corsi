@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Big & Square", layout="centered")
+st.set_page_config(page_title="Corsi Final Sync", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,36 +23,38 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GRID SYSTEM (UKURAN LEBIH BESAR) ---
+# --- CSS: ATURAN TUNGGAL (SINGLE SOURCE OF TRUTH) ---
 st.markdown("""
 <style>
-    /* 1. LAYOUT HALAMAN */
-    .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
+    /* 1. BERSIHKAN LAYAR */
+    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. GRID SYSTEM MUTLAK (HP & PC) */
+    /* =============================================
+       JURUS UTAMA: KUNCI LEBAR CONTAINER GRID
+       Ini mengatur container tombol (Streamlit)
+       ============================================= */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important; /* 4 Kolom Rata */
-        gap: 10px !important;
+        gap: 10px !important;      /* Jarak antar kotak */
         margin: 0 auto !important; /* Posisi Tengah */
         width: 100% !important;
     }
 
-    /* --- PENGATURAN UKURAN (BIAR GEDE) --- */
-    
-    /* A. HP (Layar < 600px) */
-    /* Kita pakai 90vw (90% lebar layar HP). Jadi pasti gede maksimal. */
+    /* A. SETTINGAN HP (Layar < 600px) */
     @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 90vw !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 320px !important; }
     }
 
-    /* B. PC (Layar > 600px) */
-    /* Kita naikkan jadi 600px biar puas di mata */
+    /* B. SETTINGAN PC (Layar > 600px) */
+    /* Kita kunci di 460px biar gak renggang/pecah */
     @media (min-width: 601px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 600px !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 460px !important; }
     }
 
-    /* 3. RESET ELEMENT KOLOM */
+    /* =============================================
+       STYLE TOMBOL
+       ============================================= */
     div[data-testid="column"] {
         width: auto !important;
         min-width: 0 !important;
@@ -60,18 +62,15 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 4. TOMBOL KOTAK TEGAS (SQUARE) */
     div.stButton > button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* KUNCI KOTAK */
+        aspect-ratio: 1 / 1 !important; /* Wajib Kotak */
         height: auto !important;
         min-height: 0 !important;
         padding: 0 !important;
-        
-        border-radius: 6px !important; /* Lengkungan sedang */
+        border-radius: 6px !important;
         border: 2px solid #bbb;
         margin: 0 !important;
-        line-height: 0 !important;
     }
     div.stButton > button:active { background-color: #007bff; color: white; }
     div.stButton { margin: 0 !important; width: 100% !important; }
@@ -80,29 +79,35 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# Menggunakan logic width yang sama dengan CSS di atas
+# Menggunakan Logic CSS yang SAMA PERSIS dengan tombol di atas
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
         boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:6px; border:2px solid #999; width:100%;"></div>'
     
+    # KITA GUNAKAN STYLE INLINE YANG SINKRON DENGAN CSS DI ATAS
+    # max-width diatur lewat media query style tag di bawah
     return f"""
-    <div style="
-        display: grid; 
-        grid-template-columns: repeat(4, 1fr); 
-        gap: 10px; 
-        width: 100%;
-        margin: 0 auto 20px auto;
-    ">
-    <style>
-    /* Logic Ukuran Visual Soal (Sinkron dengan Tombol) */
-    @media (max-width: 600px) {{ .soal-wrapper {{ max-width: 90vw !important; }} }}
-    @media (min-width: 601px) {{ .soal-wrapper {{ max-width: 600px !important; }} }}
-    </style>
-    <div class="soal-wrapper" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:0 auto; width:100%;">
+    <div class="soal-container">
+        <style>
+            .soal-container {{
+                display: grid; 
+                grid-template-columns: repeat(4, 1fr); 
+                gap: 10px; 
+                width: 100%;
+                margin: 0 auto 20px auto; /* Tengah */
+            }}
+            /* SINKRONISASI UKURAN HP */
+            @media (max-width: 600px) {{ 
+                .soal-container {{ max-width: 320px !important; }} 
+            }}
+            /* SINKRONISASI UKURAN PC */
+            @media (min-width: 601px) {{ 
+                .soal-container {{ max-width: 460px !important; }} 
+            }}
+        </style>
         {boxes}
-    </div>
     </div>
     """
 
@@ -118,7 +123,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi Ukuran Besar & Responsif")
+    st.caption("Versi Sync PC & HP")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
