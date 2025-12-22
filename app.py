@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Grid Fix", layout="centered")
+st.set_page_config(page_title="Corsi Responsive", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,23 +23,36 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GRID SYSTEM (JURUS TERAKHIR) ---
+# --- CSS RESPONSIVE (JURUS UTAMA) ---
 st.markdown("""
 <style>
     /* 1. BERSIHKAN LAYAR */
-    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
+    .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
     
-    /* 2. UBAH CONTAINER TOMBOL JADI 'CSS GRID' (BUKAN FLEXBOX LAGI) */
-    /* Ini kuncinya: Memaksa layout jadi 4 kolom presisi */
+    /* 2. CONTAINER TOMBOL (GRID SYSTEM) */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important; /* WAJIB 4 KOLOM */
-        gap: 5px !important; /* Jarak antar tombol 5px */
-        max-width: 280px !important; /* Batasi lebar total HP biar gak jauh-jauhan */
         margin: 0 auto !important; /* Posisi Tengah */
+        gap: 10px !important;
     }
 
-    /* 3. RESET KOLOM BAWAAN STREAMLIT */
+    /* --- RESPONSIVE LOGIC --- */
+    
+    /* A. TAMPILAN HP (Default) */
+    div[data-testid="stHorizontalBlock"] {
+        max-width: 320px !important; /* Lebar pas untuk HP */
+    }
+
+    /* B. TAMPILAN PC/TABLET (Layar > 600px) */
+    @media (min-width: 600px) {
+        div[data-testid="stHorizontalBlock"] {
+            max-width: 500px !important; /* Lebar lebih gede buat PC */
+            gap: 15px !important;
+        }
+    }
+
+    /* 3. RESET KOLOM BAWAAN */
     div[data-testid="column"] {
         width: auto !important;
         min-width: 0 !important;
@@ -47,39 +60,39 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 4. STYLE TOMBOL */
+    /* 4. STYLE TOMBOL (WAJIB KOTAK) */
     div.stButton > button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* Kotak Sempurna */
+        aspect-ratio: 1 / 1 !important; /* KUNCI KOTAK SEMPURNA */
         height: auto !important;
         padding: 0 !important;
-        border-radius: 6px;
+        border-radius: 8px;
         border: 2px solid #bbb;
     }
     div.stButton > button:active { background-color: #007bff; color: white; }
-    
-    /* Hapus margin button */
     div.stButton { margin: 0 !important; }
     
 </style>
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# Dibuat persis sama dengan ukuran grid tombol (Max 280px)
+# Menggunakan CSS Inline yang support max-width 100% agar ikut ukuran container
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # HTML Grid juga pakai teknik yang sama
-        boxes += f'<div style="width:100%;aspect-ratio:1/1;background-color:{color};border-radius:6px;border:2px solid #999;"></div>'
+        # Kita pakai persentase width agar responsif mengikuti wadah induknya
+        boxes += f'<div style="background-color:{color};aspect-ratio:1/1;border-radius:8px;border:2px solid #999;"></div>'
     
-    # Grid HTML Container
+    # Wadah utama HTML Soal
+    # Di HP dia akan kecil (320px), di PC dia akan membesar (500px) mengikuti style CSS di atas
     return f"""
     <div style="
-        display:grid;
+        display: grid;
         grid-template-columns: repeat(4, 1fr);
-        gap: 5px;
-        max-width: 280px;
+        gap: 10px;
+        max-width: 500px; /* Max width PC */
+        width: 100%;      /* Agar mengecil di HP */
         margin: 0 auto 20px auto;
     ">
         {boxes}
@@ -88,10 +101,9 @@ def get_html(highlight_idx=None):
 
 # --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
-    # Cukup panggil st.columns, CSS Grid di atas yang akan mengambil alih layoutnya
     with st.container():
         for row in range(4):
-            cols = st.columns(4) # Walaupun ini Streamlit Columns, CSS kita akan mengubahnya jadi GRID
+            cols = st.columns(4) 
             for col in range(4):
                 idx = row * 4 + col
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
@@ -99,7 +111,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi CSS Grid (4 Kolom Paksa)")
+    st.write("Versi Responsive (HP Rapi, PC Jelas)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
