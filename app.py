@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Square Fix", layout="centered")
+st.set_page_config(page_title="Corsi Final Kotak", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,54 +23,47 @@ def send_data(data):
     except:
         return False
 
-# --- JURUS CSS GRID SYSTEM (HP & PC KOTAK SEMPURNA) ---
+# --- CSS GRID SYSTEM (KOTAK TAJAM) ---
 st.markdown("""
 <style>
-    /* 1. BERSIHKAN LAYAR */
+    /* 1. LAYOUT HALAMAN */
     .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. CONTAINER TOMBOL (GRID SYSTEM MUTLAK) */
+    /* 2. GRID SYSTEM MUTLAK (HP & PC) */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important; /* Wajib 4 Kolom Rata */
-        gap: 10px !important;
-        margin: 0 auto !important; /* Posisi Tengah */
+        grid-template-columns: repeat(4, 1fr) !important; /* 4 Kolom */
+        gap: 8px !important;
+        margin: 0 auto !important;
         width: 100% !important;
     }
 
-    /* --- RESPONSIVE WIDTH CONTROL --- */
-    
-    /* A. SETTINGAN HP (Layar < 600px) */
+    /* ATUR LEBAR TOTAL BIAR PAS */
     @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] {
-            max-width: 300px !important; /* Lebar total 300px di HP */
-        }
+        div[data-testid="stHorizontalBlock"] { max-width: 300px !important; }
     }
-
-    /* B. SETTINGAN PC (Layar > 600px) */
     @media (min-width: 601px) {
-        div[data-testid="stHorizontalBlock"] {
-            max-width: 450px !important; /* Lebar total 450px di PC */
-        }
+        div[data-testid="stHorizontalBlock"] { max-width: 450px !important; }
     }
 
-    /* 3. RESET KOLOM BAWAAN STREAMLIT (Biar gak ganggu Grid) */
+    /* 3. RESET ELEMENT KOLOM */
     div[data-testid="column"] {
         width: auto !important;
-        flex: 1 1 auto !important;
         min-width: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
     }
 
-    /* 4. TOMBOL WAJIB KOTAK (ASPECT RATIO 1:1) */
+    /* 4. TOMBOL JADI KOTAK TAJAM (SQUARE) */
     div.stButton > button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* INI KUNCINYA */
-        height: auto !important;         /* Biarkan height menyesuaikan width */
-        min-height: 0 !important;        /* Reset min-height bawaan Streamlit */
+        aspect-ratio: 1 / 1 !important;
+        height: auto !important;
+        min-height: 0 !important;
         padding: 0 !important;
-        border-radius: 8px;
+        
+        /* INI PERBAIKANNYA: */
+        border-radius: 4px !important; /* Dikecilin biar gak jadi lingkaran */
         border: 2px solid #bbb;
         margin: 0 !important;
         line-height: 0 !important;
@@ -82,21 +75,18 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# Menggunakan Grid yang SAMA PERSIS dengan tombol
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Kita pakai aspect-ratio di sini juga biar sinkron
-        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:8px; border:2px solid #999; width:100%;"></div>'
+        # border-radius disamakan 4px
+        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:4px; border:2px solid #999; width:100%;"></div>'
     
-    # Container HTML ini akan mengikuti aturan CSS Global (max-width 300 di HP, 450 di PC)
-    # Kita buat logic width manual disini agar visual soal sinkron
     return f"""
     <div style="
         display: grid; 
         grid-template-columns: repeat(4, 1fr); 
-        gap: 10px; 
+        gap: 8px; 
         width: 100%;
         max-width: 450px; /* Default PC */
         margin: 0 auto 20px auto;
@@ -114,7 +104,6 @@ def get_html(highlight_idx=None):
 
 # --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
-    # Wadah Container Tombol
     with st.container():
         for row in range(4):
             cols = st.columns(4) 
@@ -125,7 +114,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.caption("Versi Kotak Sempurna (PC & HP)")
+    st.write("Versi Final: Kotak (Bukan Bulet)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
