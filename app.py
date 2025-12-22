@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Final Kotak", layout="centered")
+st.set_page_config(page_title="Corsi Big & Square", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,7 +23,7 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GRID SYSTEM (KOTAK TAJAM) ---
+# --- CSS GRID SYSTEM (UKURAN LEBIH BESAR) ---
 st.markdown("""
 <style>
     /* 1. LAYOUT HALAMAN */
@@ -32,18 +32,24 @@ st.markdown("""
     /* 2. GRID SYSTEM MUTLAK (HP & PC) */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important; /* 4 Kolom */
-        gap: 8px !important;
-        margin: 0 auto !important;
+        grid-template-columns: repeat(4, 1fr) !important; /* 4 Kolom Rata */
+        gap: 10px !important;
+        margin: 0 auto !important; /* Posisi Tengah */
         width: 100% !important;
     }
 
-    /* ATUR LEBAR TOTAL BIAR PAS */
+    /* --- PENGATURAN UKURAN (BIAR GEDE) --- */
+    
+    /* A. HP (Layar < 600px) */
+    /* Kita pakai 90vw (90% lebar layar HP). Jadi pasti gede maksimal. */
     @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 300px !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 90vw !important; }
     }
+
+    /* B. PC (Layar > 600px) */
+    /* Kita naikkan jadi 600px biar puas di mata */
     @media (min-width: 601px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 450px !important; }
+        div[data-testid="stHorizontalBlock"] { max-width: 600px !important; }
     }
 
     /* 3. RESET ELEMENT KOLOM */
@@ -54,16 +60,15 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* 4. TOMBOL JADI KOTAK TAJAM (SQUARE) */
+    /* 4. TOMBOL KOTAK TEGAS (SQUARE) */
     div.stButton > button {
         width: 100% !important;
-        aspect-ratio: 1 / 1 !important;
+        aspect-ratio: 1 / 1 !important; /* KUNCI KOTAK */
         height: auto !important;
         min-height: 0 !important;
         padding: 0 !important;
         
-        /* INI PERBAIKANNYA: */
-        border-radius: 4px !important; /* Dikecilin biar gak jadi lingkaran */
+        border-radius: 6px !important; /* Lengkungan sedang */
         border: 2px solid #bbb;
         margin: 0 !important;
         line-height: 0 !important;
@@ -75,28 +80,27 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
+# Menggunakan logic width yang sama dengan CSS di atas
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # border-radius disamakan 4px
-        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:4px; border:2px solid #999; width:100%;"></div>'
+        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:6px; border:2px solid #999; width:100%;"></div>'
     
     return f"""
     <div style="
         display: grid; 
         grid-template-columns: repeat(4, 1fr); 
-        gap: 8px; 
+        gap: 10px; 
         width: 100%;
-        max-width: 450px; /* Default PC */
         margin: 0 auto 20px auto;
     ">
     <style>
-    @media (max-width: 600px) {{ 
-        .soal-container {{ max-width: 300px !important; }} 
-    }}
+    /* Logic Ukuran Visual Soal (Sinkron dengan Tombol) */
+    @media (max-width: 600px) {{ .soal-wrapper {{ max-width: 90vw !important; }} }}
+    @media (min-width: 601px) {{ .soal-wrapper {{ max-width: 600px !important; }} }}
     </style>
-    <div class="soal-container" style="display:contents;">
+    <div class="soal-wrapper" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:0 auto; width:100%;">
         {boxes}
     </div>
     </div>
@@ -114,7 +118,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi Final: Kotak (Bukan Bulet)")
+    st.write("Versi Ukuran Besar & Responsif")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
