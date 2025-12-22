@@ -3,14 +3,11 @@ import requests
 import time
 import random
 
-# --- SETUP HALAMAN ---
-# Kita set layout="wide" biar gak terlalu kepotong padding bawaan
-st.set_page_config(page_title="Tes Corsi Mobile Fix", layout="wide")
-
-# --- URL GOOGLE SCRIPT ---
+# --- CONFIG ---
+st.set_page_config(page_title="Corsi Final Fix", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
-# --- INIT STATE ---
+# --- STATE ---
 if 'page' not in st.session_state: st.session_state.page = "welcome"
 if 'user_data' not in st.session_state: st.session_state.user_data = {}
 if 'corsi_level' not in st.session_state: st.session_state.corsi_level = 2
@@ -19,7 +16,6 @@ if 'corsi_user_input' not in st.session_state: st.session_state.corsi_user_input
 if 'corsi_phase' not in st.session_state: st.session_state.corsi_phase = "idle"
 if 'corsi_lives' not in st.session_state: st.session_state.corsi_lives = 1
 
-# --- KIRIM DATA ---
 def send_data(data):
     try:
         requests.post(GOOGLE_SCRIPT_URL, json=data)
@@ -27,126 +23,72 @@ def send_data(data):
     except:
         return False
 
-# --- CSS KHUSUS MOBILE ---
-# Kita gunakan @media query untuk memaksa tampilan HP
+# --- CSS ANTI-ERROR & ANTI-JUMBO ---
 st.markdown("""
 <style>
-    /* 1. HAPUS PADDING HALAMAN BIAR LEGA */
-    .block-container {
-        padding-top: 1rem !important;
-        padding-bottom: 2rem !important;
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-    }
-
-    /* 2. HEADER TENGAH */
-    h1, h2, h3, h4, p { text-align: center; }
-
-    /* =========================================
-       BAGIAN INI YANG MEMAKSA 4 KOLOM DI HP
-       ========================================= */
+    /* 1. HAPUS PADDING BIAR LEGA */
+    .block-container { padding-top: 1rem !important; padding-bottom: 2rem !important; }
     
-    /* Target semua layar (termasuk HP) */
-    div[data-testid="stHorizontalBlock"] {
-        flex-direction: row !important; /* Paksa baris ke samping */
-        flex-wrap: nowrap !important;   /* DILARANG TURUN BARIS */
-        gap: 5px !important;            /* Jarak antar kolom tipis */
-        justify-content: center !important;
-    }
-
-    /* Paksa Kolom agar mengecil dan muat */
-    div[data-testid="column"] {
-        width: auto !important;
-        flex: 1 1 auto !important;
-        min-width: 10px !important; /* Biarkan mengecil sampai 10px pun boleh */
-        padding: 0 !important;
-    }
-
-    /* STYLE TOMBOL (Soal & Jawaban) */
+    /* 2. TENGAHKAN SEMUA */
+    div[data-testid="stVerticalBlock"] { align-items: center; text-align: center; }
+    
+    /* 3. TOMBOL (JAWABAN) DIKUNCI MATI UKURANNYA */
+    /* Ini biar gak melar jadi raksasa di HP */
     div.stButton > button {
-        width: 100% !important;
-        aspect-ratio: 1 / 1 !important; /* KOTAK */
-        height: auto !important;
+        width: 50px !important;
+        height: 50px !important;
+        min-width: 50px !important;
         padding: 0 !important;
         border-radius: 6px;
-        border: 2px solid #999;
-        margin: 0 !important;
+        border: 2px solid #bbb;
+        margin: 2px !important;
     }
-    
-    /* Biar tombol gak kegedean di layar laptop */
-    @media (min-width: 600px) {
-        div.stButton > button {
-            max-width: 60px !important; /* Max lebar di laptop */
-        }
-    }
-    
     div.stButton > button:active { background-color: #007bff; color: white; }
+
+    /* 4. PAKSA 4 KOLOM (JANGAN TURUN KE BAWAH) */
+    div[data-testid="column"] {
+        width: auto !important;
+        flex: 0 0 auto !important;
+        min-width: 0 !important;
+        padding: 0 !important;
+    }
     
+    /* 5. RAPATKAN GRID TOMBOL */
+    div[data-testid="stHorizontalBlock"] {
+        justify-content: center !important;
+        gap: 0px !important;
+        flex-wrap: nowrap !important; /* HARAM TURUN BARIS */
+    }
 </style>
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
+# FIX: SAYA HAPUS INDENTASI DAN MULTILINE STRING
+# HTML ditulis satu baris lurus biar gak muncul teksnya
 def get_html(highlight_idx=None):
-    # Kita buat grid manual pakai HTML biar presisi
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        # Grid System HTML
-        boxes += f"""
-        <div style="
-            display: inline-block;
-            width: 20%; 
-            margin: 1.5%;
-            aspect-ratio: 1/1; 
-            background-color: {color};
-            border-radius: 6px;
-            border: 2px solid #999;
-            vertical-align: top;
-        "></div>
-        """
+        # Style ditulis rapat tanpa spasi
+        boxes += f'<div style="float:left;width:50px;height:50px;margin:2px;background-color:{color};border-radius:6px;border:2px solid #999;"></div>'
     
-    # Wadah utama max 300px biar sama kayak tombol
-    return f"""
-    <div style="
-        width: 100%; 
-        max-width: 350px; 
-        margin: 0 auto 20px auto; 
-        text-align: center;
-    ">
-        {boxes}
-    </div>
-    """
+    # Bungkus wadah selebar (50px+4px)*4 = ~220px. Center.
+    return f'<div style="width:220px;margin:0 auto 20px auto;overflow:hidden;">{boxes}</div>'
 
-# --- FUNGSI TOMBOL (JAWABAN) ---
+# --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
-    # Kuncinya: Wadah container ini kita batasi lebarnya biar center
-    # Kita pakai 3 kolom kosong di kiri kanan untuk "memeras" grid ke tengah (di laptop)
-    # Tapi di HP kita biarkan full width
-    
-    # Wadah pembungkus agar max-width terjaga
-    container = st.container()
-    
-    # CSS Injector lokal untuk membatasi lebar container tombol ini saja
-    st.markdown("""
-    <style>
-        div[data-testid="stVerticalBlock"] > div:has(div.stButton) {
-            max-width: 400px !important; /* Grid tombol maks 400px */
-            margin: 0 auto !important;   /* Posisi Tengah */
-        }
-    </style>
-    """, unsafe_allow_html=True)
-    
-    with container:
+    # Grid dibuat manual pakai container biar kena CSS Global
+    with st.container():
         for row in range(4):
-            cols = st.columns(4) # CSS Global di atas akan memaksa ini tetap 4 kolom
+            cols = st.columns(4)
             for col in range(4):
                 idx = row * 4 + col
-                cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i), use_container_width=True)
+                cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
 
-# --- HALAMAN 1: WELCOME ---
+# --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi Anti-Stack Mobile")
+    st.caption("Versi Final Anti-Bug")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
@@ -155,23 +97,26 @@ if st.session_state.page == "welcome":
             st.session_state.page = "corsi_game"
             st.rerun()
 
-# --- HALAMAN 2: GAME ---
+# --- PAGE 2: GAME ---
 elif st.session_state.page == "corsi_game":
-    st.markdown(f"#### Level: {st.session_state.corsi_level - 1}")
+    st.markdown(f"**Level: {st.session_state.corsi_level - 1}**")
     layar = st.empty()
 
-    # IDLE
     if st.session_state.corsi_phase == "idle":
         with layar.container():
-            st.info("Hafalkan urutan biru!")
+            st.info("Hafalkan biru!")
+            # Render HTML Soal
             st.markdown(get_html(None), unsafe_allow_html=True)
-            if st.button("Mulai Level Ini", type="primary", use_container_width=True):
-                st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
-                st.session_state.corsi_user_input = []
-                st.session_state.corsi_phase = "showing"
-                st.rerun()
+            
+            # Tombol Mulai
+            col1, col2, col3 = st.columns([1,2,1])
+            with col2:
+                if st.button("Mulai Level", type="primary"):
+                    st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
+                    st.session_state.corsi_user_input = []
+                    st.session_state.corsi_phase = "showing"
+                    st.rerun()
 
-    # SHOWING
     elif st.session_state.corsi_phase == "showing":
         layar.markdown(get_html(None), unsafe_allow_html=True)
         time.sleep(0.5)
@@ -183,7 +128,6 @@ elif st.session_state.page == "corsi_game":
         st.session_state.corsi_phase = "input"
         st.rerun()
 
-    # INPUT
     elif st.session_state.corsi_phase == "input":
         layar.empty()
         st.success("Giliran Kamu!")
@@ -209,7 +153,7 @@ elif st.session_state.page == "corsi_game":
                 st.session_state.corsi_phase = "idle"
                 st.rerun()
 
-# --- HALAMAN 3: SAVING ---
+# --- PAGE 3: SAVING ---
 elif st.session_state.page == "saving":
     st.header("Selesai")
     status = st.empty()
