@@ -26,75 +26,72 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL (LAYOUT DASAR) ---
+# --- CSS PINTAR (SMART STYLING) ---
 st.markdown("""
 <style>
-    /* 1. SETUP LAYAR */
+    /* 1. SETUP LAYAR BIAR LEGA */
     .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. RESET PADDING KOLOM BIAR RAPI */
-    div[data-testid="column"] {
-        width: auto !important;
-        flex: 0 0 auto !important; 
-        min-width: 0 !important;
-        padding: 0 !important;
-        margin: 0 !important;
+    /* ============================================================
+       BAGIAN INI HANYA AKTIF UNTUK GAME CORSI (GRID 4 KOLOM)
+       Kita deteksi container yang punya tepat 4 kolom anak.
+       ============================================================ */
+    
+    /* Container Grid 4 Kolom */
+    div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) {
+        display: grid !important;
+        grid-template-columns: repeat(4, auto) !important;
+        justify-content: center !important;
+        gap: 15px !important;
+        margin: 0 auto !important;
+        width: fit-content !important;
     }
+
+    /* Reset Padding Kolom di dalam Grid Game */
+    div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) div[data-testid="column"] {
+        padding: 0 !important;
+        min-width: 0 !important;
+        width: auto !important;
+        flex: 0 0 auto !important;
+    }
+
+    /* Tombol Game (Secondary) JADI BULAT */
+    div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) button[kind="secondary"] {
+        width: 80px !important;    /* PC: 80px */
+        height: 80px !important;
+        border-radius: 50% !important; 
+        border: 2px solid #bbb !important;
+        padding: 0 !important;
+    }
+
+    /* Responsif HP untuk Tombol Game */
+    @media (max-width: 600px) {
+        div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) button[kind="secondary"] {
+            width: 60px !important;  /* HP: 60px */
+            height: 60px !important;
+        }
+        div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) {
+            gap: 10px !important;
+        }
+    }
+
+    /* ============================================================
+       BAGIAN INI UNTUK TOMBOL LAIN (NORMAL)
+       ============================================================ */
+    
+    /* Tombol Primary (Merah/Mulai) tetap KOTAK NORMAL */
+    button[kind="primary"] {
+        width: 100% !important;
+        height: auto !important;
+        border-radius: 8px !important;
+        padding: 0.5rem 1rem !important;
+        line-height: 1.6 !important;
+    }
+    
+    /* Tombol Secondary Biasa (Lanjut/Submit) tetap normal (tidak kena efek bulat di atas) */
+    
 </style>
 """, unsafe_allow_html=True)
-
-# --- CSS KHUSUS GAME (Diperbaiki untuk Tombol Mulai) ---
-def inject_game_css():
-    st.markdown("""
-    <style>
-        /* GRID SYSTEM UTAMA */
-        div[data-testid="stHorizontalBlock"] {
-            display: grid !important;
-            grid-template-columns: repeat(4, auto) !important;
-            justify-content: center !important;
-            gap: 15px !important;
-            margin: 0 auto !important;
-            width: 100% !important;
-        }
-
-        /* 1. ATURAN UMUM: SEMUA TOMBOL JADI BULAT (DEFAULT) */
-        div.stButton > button {
-            width: 80px !important;    
-            height: 80px !important;
-            border-radius: 50% !important; 
-            border: 2px solid #bbb;
-            padding: 0 !important;
-            margin: 0 !important;
-            line-height: 0 !important;
-        }
-
-        /* 2. PENGECUALIAN: TOMBOL PRIMARY (MULAI) JANGAN BULAT! */
-        /* Tombol dengan type="primary" akan di-reset jadi kotak normal */
-        div.stButton > button[kind="primary"] {
-            width: 100% !important;    /* Lebar penuh container */
-            height: auto !important;   /* Tinggi otomatis */
-            aspect-ratio: auto !important; /* Hapus rasio 1:1 */
-            border-radius: 8px !important; /* Sudut wajar */
-            border: 1px solid transparent;
-            padding: 0.5rem 1rem !important; /* Padding teks normal */
-            line-height: 1.6 !important;
-        }
-
-        /* 3. UKURAN HP (Hanya untuk tombol bulat) */
-        @media (max-width: 600px) {
-            /* Target tombol bulat saja (secondary) */
-            div.stButton > button[kind="secondary"] {
-                width: 60px !important;
-                height: 60px !important;
-            }
-            div[data-testid="stHorizontalBlock"] {
-                gap: 10px !important;
-            }
-        }
-        
-        div.stButton > button:active { background-color: #007bff; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL CORSI ---
 def get_corsi_html(highlight_idx=None):
@@ -120,10 +117,9 @@ def get_corsi_html(highlight_idx=None):
 def render_corsi_buttons():
     with st.container():
         for row in range(4):
-            cols = st.columns(4) 
+            cols = st.columns(4) # Ini bikin 4 kolom -> Memicu CSS Pintar di atas
             for col in range(4):
                 idx = row * 4 + col
-                # Tombol jawaban defaultnya adalah secondary (kind="secondary")
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
 
 # ==========================================
@@ -139,6 +135,7 @@ if st.session_state.page == "welcome":
     2.  📋 **Kuesioner Singkat**
     3.  🧠 **Tes Memori**
     """)
+    # Tombol ini sekarang AMAN (Kotak Normal)
     if st.button("Saya Bersedia, Mulai!", type="primary"):
         st.session_state.page = "data_diri"
         st.rerun()
@@ -151,7 +148,7 @@ elif st.session_state.page == "data_diri":
     
     with st.form("form_data"):
         st.session_state.user_data['inisial'] = st.text_input("Inisial Nama")
-        st.session_state.user_data['umur'] = st.selectbox("Umur", list(range(15, 40)))
+        st.session_state.user_data['umur'] = st.selectbox("Umur", list(range(15, 40)), index=5)
         st.session_state.user_data['gender'] = st.selectbox("Jenis Kelamin", ["Pria", "Wanita"])
         st.session_state.user_data['status'] = st.selectbox("Status", ["Pelajar", "Mahasiswa", "Bekerja", "Lainnya"])
         st.session_state.user_data['domisili'] = st.text_input("Domisili")
@@ -163,6 +160,7 @@ elif st.session_state.page == "data_diri":
         st.session_state.user_data['tujuan_inet'] = st.multiselect("Tujuan Utama", ["Medsos", "Game", "Kerja/Belajar", "Streaming", "Belanja"])
         st.session_state.user_data['tidur'] = st.selectbox("Rata-rata Tidur", ["< 5 jam", "5-6 jam", "7-8 jam", "> 8 jam"])
         
+        # Tombol ini type secondary tapi karena tidak dalam grid 4 kolom, dia tetap normal
         if st.form_submit_button("Lanjut ke Kuesioner"):
             if not st.session_state.user_data['inisial'] or not st.session_state.user_data['wa']:
                 st.error("Nama dan WA wajib diisi.")
@@ -171,7 +169,7 @@ elif st.session_state.page == "data_diri":
                 st.rerun()
 
 # ==========================================
-# PAGE 3: KUESIONER
+# PAGE 3: KUESIONER (FIXED)
 # ==========================================
 elif st.session_state.page == "kuesioner":
     st.header("Kuesioner")
@@ -202,6 +200,7 @@ elif st.session_state.page == "kuesioner":
     with st.form("form_kuesioner"):
         for i, q in enumerate(questions):
             st.write(f"**{i+1}. {q}**")
+            # FIX: index=None agar defaultnya kosong
             val = st.radio(f"q{i}", [1, 2, 3, 4], key=f"kues_{i}", horizontal=True, label_visibility="collapsed", index=None)
             responses.append(val)
             st.divider()
@@ -209,6 +208,7 @@ elif st.session_state.page == "kuesioner":
         submitted = st.form_submit_button("Lanjut ke Tes Memori")
         
         if submitted:
+            # Validasi: Cek apakah ada yang None (belum diisi)
             if None in responses:
                 st.error("Mohon isi semua pertanyaan kuesioner sebelum lanjut.")
             else:
@@ -233,8 +233,6 @@ elif st.session_state.page == "corsi_intro":
 # PAGE 5: CORSI GAME
 # ==========================================
 elif st.session_state.page == "corsi_game":
-    inject_game_css()
-    
     st.markdown(f"<h4 style='text-align:center'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
 
@@ -243,9 +241,9 @@ elif st.session_state.page == "corsi_game":
             st.write("Perhatikan urutan!")
             st.markdown(get_corsi_html(None), unsafe_allow_html=True)
             
+            # Layout [1, 2, 1] -> Hanya 3 kolom, jadi CSS "Bulat" TIDAK akan aktif di sini. Aman.
             c1, c2, c3 = st.columns([1,2,1])
             with c2:
-                # Tombol ini type="primary", jadi akan kena CSS override biar kotak lagi
                 if st.button("Mulai Level Ini", type="primary", use_container_width=True):
                     st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
                     st.session_state.corsi_user_input = []
@@ -266,14 +264,16 @@ elif st.session_state.page == "corsi_game":
     elif st.session_state.corsi_phase == "input":
         layar.empty()
         st.caption("Giliran Anda!")
+        
+        # Memanggil grid 4x4 -> Memicu CSS "Bulat"
         render_corsi_buttons()
 
         if len(st.session_state.corsi_user_input) > 0:
             curr = len(st.session_state.corsi_user_input) - 1
-            # LOGIKA CEK JAWABAN
+            # LOGIKA CEK JAWABAN (SILENT / TANPA ERROR)
             if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
-                # SALAH: Tidak ada Toast, langsung proses.
-                time.sleep(0.2) # Jeda dikit biar gak kaget
+                # JIKA SALAH: Diam saja, tunggu sebentar, lalu reset
+                time.sleep(0.2) 
                 if st.session_state.corsi_lives > 0:
                     st.session_state.corsi_lives -= 1
                     st.session_state.corsi_phase = "idle"
@@ -281,10 +281,9 @@ elif st.session_state.page == "corsi_game":
                 else:
                     st.session_state.page = "saving"
                     st.rerun()
-            # BENAR
+            # JIKA BENAR
             elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
-                st.toast("Benar! 🎉") # Kalau benar boleh dikasih reward visual dikit
-                time.sleep(0.5)
+                time.sleep(0.2) # Jeda dikit
                 st.session_state.corsi_score = st.session_state.corsi_level - 1
                 st.session_state.corsi_level += 1
                 st.session_state.corsi_lives = 1
