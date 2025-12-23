@@ -26,7 +26,7 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL (HANYA LAYOUT DASAR, TIDAK MERUSAK TOMBOL LAIN) ---
+# --- CSS GLOBAL (LAYOUT DASAR) ---
 st.markdown("""
 <style>
     /* 1. SETUP LAYAR */
@@ -43,13 +43,11 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- CSS KHUSUS GAME (Hanya dipanggil saat main game) ---
+# --- CSS KHUSUS GAME (Diperbaiki untuk Tombol Mulai) ---
 def inject_game_css():
     st.markdown("""
     <style>
-        /* INI HANYA BERLAKU SAAT GAME BERJALAN */
-        
-        /* 1. GRID SYSTEM: DITENGAHKAN */
+        /* GRID SYSTEM UTAMA */
         div[data-testid="stHorizontalBlock"] {
             display: grid !important;
             grid-template-columns: repeat(4, auto) !important;
@@ -59,20 +57,33 @@ def inject_game_css():
             width: 100% !important;
         }
 
-        /* 2. TOMBOL BULAT (FIX PIXEL) */
+        /* 1. ATURAN UMUM: SEMUA TOMBOL JADI BULAT (DEFAULT) */
         div.stButton > button {
-            width: 80px !important;    /* Default PC */
+            width: 80px !important;    
             height: 80px !important;
-            border-radius: 50% !important; /* LINGKARAN */
+            border-radius: 50% !important; 
             border: 2px solid #bbb;
             padding: 0 !important;
             margin: 0 !important;
             line-height: 0 !important;
         }
 
-        /* 3. UKURAN HP */
+        /* 2. PENGECUALIAN: TOMBOL PRIMARY (MULAI) JANGAN BULAT! */
+        /* Tombol dengan type="primary" akan di-reset jadi kotak normal */
+        div.stButton > button[kind="primary"] {
+            width: 100% !important;    /* Lebar penuh container */
+            height: auto !important;   /* Tinggi otomatis */
+            aspect-ratio: auto !important; /* Hapus rasio 1:1 */
+            border-radius: 8px !important; /* Sudut wajar */
+            border: 1px solid transparent;
+            padding: 0.5rem 1rem !important; /* Padding teks normal */
+            line-height: 1.6 !important;
+        }
+
+        /* 3. UKURAN HP (Hanya untuk tombol bulat) */
         @media (max-width: 600px) {
-            div.stButton > button {
+            /* Target tombol bulat saja (secondary) */
+            div.stButton > button[kind="secondary"] {
                 width: 60px !important;
                 height: 60px !important;
             }
@@ -112,6 +123,7 @@ def render_corsi_buttons():
             cols = st.columns(4) 
             for col in range(4):
                 idx = row * 4 + col
+                # Tombol jawaban defaultnya adalah secondary (kind="secondary")
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
 
 # ==========================================
@@ -127,7 +139,6 @@ if st.session_state.page == "welcome":
     2.  📋 **Kuesioner Singkat**
     3.  🧠 **Tes Memori**
     """)
-    # Tombol ini sekarang AMAN (Tidak akan jadi bulat aneh)
     if st.button("Saya Bersedia, Mulai!", type="primary"):
         st.session_state.page = "data_diri"
         st.rerun()
@@ -160,7 +171,7 @@ elif st.session_state.page == "data_diri":
                 st.rerun()
 
 # ==========================================
-# PAGE 3: KUESIONER (FIXED)
+# PAGE 3: KUESIONER
 # ==========================================
 elif st.session_state.page == "kuesioner":
     st.header("Kuesioner")
@@ -191,7 +202,6 @@ elif st.session_state.page == "kuesioner":
     with st.form("form_kuesioner"):
         for i, q in enumerate(questions):
             st.write(f"**{i+1}. {q}**")
-            # FIX: index=None agar defaultnya kosong
             val = st.radio(f"q{i}", [1, 2, 3, 4], key=f"kues_{i}", horizontal=True, label_visibility="collapsed", index=None)
             responses.append(val)
             st.divider()
@@ -199,7 +209,6 @@ elif st.session_state.page == "kuesioner":
         submitted = st.form_submit_button("Lanjut ke Tes Memori")
         
         if submitted:
-            # Validasi: Cek apakah ada yang None (belum diisi)
             if None in responses:
                 st.error("Mohon isi semua pertanyaan kuesioner sebelum lanjut.")
             else:
@@ -221,10 +230,9 @@ elif st.session_state.page == "corsi_intro":
         st.rerun()
 
 # ==========================================
-# PAGE 5: CORSI GAME (CSS Tombol Bulat Aktif Disini)
+# PAGE 5: CORSI GAME
 # ==========================================
 elif st.session_state.page == "corsi_game":
-    # AKTIFKAN CSS KHUSUS GAME DI SINI
     inject_game_css()
     
     st.markdown(f"<h4 style='text-align:center'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
@@ -237,6 +245,7 @@ elif st.session_state.page == "corsi_game":
             
             c1, c2, c3 = st.columns([1,2,1])
             with c2:
+                # Tombol ini type="primary", jadi akan kena CSS override biar kotak lagi
                 if st.button("Mulai Level Ini", type="primary", use_container_width=True):
                     st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
                     st.session_state.corsi_user_input = []
@@ -261,9 +270,10 @@ elif st.session_state.page == "corsi_game":
 
         if len(st.session_state.corsi_user_input) > 0:
             curr = len(st.session_state.corsi_user_input) - 1
+            # LOGIKA CEK JAWABAN
             if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
-                st.toast("Salah! ❌")
-                time.sleep(0.5)
+                # SALAH: Tidak ada Toast, langsung proses.
+                time.sleep(0.2) # Jeda dikit biar gak kaget
                 if st.session_state.corsi_lives > 0:
                     st.session_state.corsi_lives -= 1
                     st.session_state.corsi_phase = "idle"
@@ -271,8 +281,9 @@ elif st.session_state.page == "corsi_game":
                 else:
                     st.session_state.page = "saving"
                     st.rerun()
+            # BENAR
             elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
-                st.toast("Benar! 🎉")
+                st.toast("Benar! 🎉") # Kalau benar boleh dikasih reward visual dikit
                 time.sleep(0.5)
                 st.session_state.corsi_score = st.session_state.corsi_level - 1
                 st.session_state.corsi_level += 1
