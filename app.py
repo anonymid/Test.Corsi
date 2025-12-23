@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Final Bulat", layout="centered")
+st.set_page_config(page_title="Corsi Final Fixed Pixel", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,84 +23,100 @@ def send_data(data):
     except:
         return False
 
-# --- CSS KHUSUS: MEMPERBESAR TOMBOL ---
+# --- CSS JURUS "PIXEL LOCK" ---
 st.markdown("""
 <style>
-    /* 1. SETUP HALAMAN */
-    .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
+    /* 1. SETUP LAYAR */
+    .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. GRID SYSTEM (WADAH UTAMA) */
+    /* 2. GRID SYSTEM: DITENGAHKAN */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
-        grid-template-columns: repeat(4, 1fr) !important;
-        gap: 10px !important;       /* Jarak antar bulat kita rapatkan dikit biar bulatnya gede */
-        margin: 0 auto !important;  /* Posisi Tengah */
+        grid-template-columns: repeat(4, auto) !important; /* Pakai 'auto' biar ngikutin ukuran tombol */
+        justify-content: center !important; /* POSISI TENGAH LAYAR */
+        gap: 15px !important;      /* Jarak antar bola */
+        margin: 0 auto !important;
         width: 100% !important;
     }
 
-    /* --- UKURAN RESPONSIF (DISAMAKAN) --- */
-    @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 320px !important; } /* HP */
-    }
-    @media (min-width: 601px) {
-        div[data-testid="stHorizontalBlock"] { max-width: 500px !important; } /* PC */
-    }
-
-    /* 3. MEMBUNUH PADDING KOLOM (INI BIANG KEROKNYA) */
-    /* Streamlit kasih padding bawaan yang bikin tombol jadi kecil. Kita hapus! */
+    /* 3. RESET KOLOM STREAMLIT */
     div[data-testid="column"] {
         width: auto !important;
+        flex: 0 0 auto !important; /* Jangan melar */
         min-width: 0 !important;
-        padding: 0 !important; /* HAPUS PADDING KANAN KIRI */
+        padding: 0 !important;
         margin: 0 !important;
     }
 
-    /* 4. TOMBOL BULET MAKSIMAL */
+    /* =========================================
+       4. TOMBOL BULAT (FIX PIXEL)
+       ========================================= */
     div.stButton > button {
-        width: 100% !important;      /* LEBAR PENUH */
-        aspect-ratio: 1 / 1 !important; 
-        height: auto !important;
-        padding: 0 !important;
+        /* DEFAULT (UNTUK PC/LAPTOP) */
+        width: 80px !important;    /* LEBAR FIX */
+        height: 80px !important;   /* TINGGI FIX */
         
         border-radius: 50% !important; /* LINGKARAN */
         border: 2px solid #bbb;
+        padding: 0 !important;
         margin: 0 !important;
+        line-height: 0 !important;
     }
+
+    /* 5. UKURAN KHUSUS HP (LAYAR KECIL) */
+    @media (max-width: 600px) {
+        div.stButton > button {
+            width: 60px !important;  /* LEBIH KECIL DI HP */
+            height: 60px !important; /* SAMA PERSIS BIAR BULET */
+        }
+        /* Grid gap dikecilin dikit di HP */
+        div[data-testid="stHorizontalBlock"] {
+            gap: 10px !important;
+        }
+    }
+
+    /* Efek Klik */
     div.stButton > button:active { background-color: #007bff; color: white; }
-    div.stButton { margin: 0 !important; width: 100% !important; }
+    div.stButton { margin: 0 !important; width: auto !important; }
     
 </style>
 """, unsafe_allow_html=True)
 
 # --- FUNGSI VISUAL (SOAL) ---
-# Kita gunakan struktur HTML yang 100% Identik dengan tombol
+# Menggunakan HTML Hardcode Pixel yang SAMA PERSIS dengan tombol
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:50%; border:2px solid #999; width:100%;"></div>'
+        # Disini kita pakai class 'bola' yang nanti diatur ukurannya lewat CSS diatas biar sinkron
+        boxes += f'<div class="bola" style="background-color:{color}; border-radius:50%; border:2px solid #999;"></div>'
     
     return f"""
-    <div class="soal-container">
+    <div style="display:flex; justify-content:center; margin-bottom:20px;">
         <style>
-            .soal-container {{
-                display: grid; 
-                grid-template-columns: repeat(4, 1fr); 
-                gap: 10px; /* SAMA DENGAN TOMBOL */
-                width: 100%;
-                margin: 0 auto 20px auto; 
+            .grid-soal {{
+                display: grid;
+                grid-template-columns: repeat(4, auto);
+                gap: 15px;
+                justify-content: center;
             }}
-            /* UKURAN SAMA PERSIS DENGAN TOMBOL */
-            @media (max-width: 600px) {{ .soal-container {{ max-width: 320px !important; }} }}
-            @media (min-width: 601px) {{ .soal-container {{ max-width: 500px !important; }} }}
+            .bola {{
+                width: 80px; height: 80px; /* Default PC */
+            }}
+            @media (max-width: 600px) {{
+                .grid-soal {{ gap: 10px; }}
+                .bola {{ width: 60px; height: 60px; }} /* Default HP */
+            }}
         </style>
-        {boxes}
+        <div class="grid-soal">
+            {boxes}
+        </div>
     </div>
     """
 
 # --- FUNGSI INPUT (JAWABAN) ---
 def render_buttons():
-    # Container ini akan otomatis kena CSS grid di atas
+    # Grid Container
     with st.container():
         for row in range(4):
             cols = st.columns(4) 
@@ -111,7 +127,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi Final: Bulat Besar (Same Size)")
+    st.write("Versi Final: Fixed Pixel (Dijamin Bulat)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
