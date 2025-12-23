@@ -26,23 +26,13 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL (Corsi Pixel Lock - Bulat Sempurna) ---
+# --- CSS GLOBAL (HANYA LAYOUT DASAR, TIDAK MERUSAK TOMBOL LAIN) ---
 st.markdown("""
 <style>
     /* 1. SETUP LAYAR */
     .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. GRID SYSTEM: DITENGAHKAN */
-    div[data-testid="stHorizontalBlock"] {
-        display: grid !important;
-        grid-template-columns: repeat(4, auto) !important;
-        justify-content: center !important; /* POSISI TENGAH LAYAR */
-        gap: 15px !important;      /* Jarak antar bola */
-        margin: 0 auto !important;
-        width: 100% !important;
-    }
-
-    /* 3. RESET KOLOM STREAMLIT */
+    /* 2. RESET PADDING KOLOM BIAR RAPI */
     div[data-testid="column"] {
         width: auto !important;
         flex: 0 0 auto !important; 
@@ -50,40 +40,52 @@ st.markdown("""
         padding: 0 !important;
         margin: 0 !important;
     }
-
-    /* 4. TOMBOL BULAT (FIX PIXEL) */
-    div.stButton > button {
-        /* DEFAULT (UNTUK PC/LAPTOP) */
-        width: 80px !important;    /* LEBAR FIX */
-        height: 80px !important;   /* TINGGI FIX */
-        
-        border-radius: 50% !important; /* LINGKARAN */
-        border: 2px solid #bbb;
-        padding: 0 !important;
-        margin: 0 !important;
-        line-height: 0 !important;
-    }
-
-    /* 5. UKURAN KHUSUS HP (LAYAR KECIL) */
-    @media (max-width: 600px) {
-        div.stButton > button {
-            width: 60px !important;  /* LEBIH KECIL DI HP */
-            height: 60px !important; /* SAMA PERSIS BIAR BULET */
-        }
-        /* Grid gap dikecilin dikit di HP */
-        div[data-testid="stHorizontalBlock"] {
-            gap: 10px !important;
-        }
-    }
-
-    /* Efek Klik */
-    div.stButton > button:active { background-color: #007bff; color: white; }
-    div.stButton { margin: 0 !important; width: auto !important; }
-    
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI CORSI (VISUAL) ---
+# --- CSS KHUSUS GAME (Hanya dipanggil saat main game) ---
+def inject_game_css():
+    st.markdown("""
+    <style>
+        /* INI HANYA BERLAKU SAAT GAME BERJALAN */
+        
+        /* 1. GRID SYSTEM: DITENGAHKAN */
+        div[data-testid="stHorizontalBlock"] {
+            display: grid !important;
+            grid-template-columns: repeat(4, auto) !important;
+            justify-content: center !important;
+            gap: 15px !important;
+            margin: 0 auto !important;
+            width: 100% !important;
+        }
+
+        /* 2. TOMBOL BULAT (FIX PIXEL) */
+        div.stButton > button {
+            width: 80px !important;    /* Default PC */
+            height: 80px !important;
+            border-radius: 50% !important; /* LINGKARAN */
+            border: 2px solid #bbb;
+            padding: 0 !important;
+            margin: 0 !important;
+            line-height: 0 !important;
+        }
+
+        /* 3. UKURAN HP */
+        @media (max-width: 600px) {
+            div.stButton > button {
+                width: 60px !important;
+                height: 60px !important;
+            }
+            div[data-testid="stHorizontalBlock"] {
+                gap: 10px !important;
+            }
+        }
+        
+        div.stButton > button:active { background-color: #007bff; color: white; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# --- FUNGSI VISUAL CORSI ---
 def get_corsi_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
@@ -104,7 +106,6 @@ def get_corsi_html(highlight_idx=None):
     </div>
     """
 
-# --- FUNGSI CORSI (TOMBOL) ---
 def render_corsi_buttons():
     with st.container():
         for row in range(4):
@@ -120,14 +121,13 @@ if st.session_state.page == "welcome":
     st.title("Penelitian Psikologi")
     st.markdown("""
     Halo! Terima kasih sudah bersedia membantu penelitian ini.
-    Anda akan melalui tahapan singkat berikut:
     
+    **Tahapan:**
     1.  📝 **Isi Data Diri**
     2.  📋 **Kuesioner Singkat**
-    3.  🧠 **Tes Memori (Corsi Block)**
-    
-    Data Anda akan dijaga kerahasiaannya.
+    3.  🧠 **Tes Memori**
     """)
+    # Tombol ini sekarang AMAN (Tidak akan jadi bulat aneh)
     if st.button("Saya Bersedia, Mulai!", type="primary"):
         st.session_state.page = "data_diri"
         st.rerun()
@@ -137,7 +137,6 @@ if st.session_state.page == "welcome":
 # ==========================================
 elif st.session_state.page == "data_diri":
     st.header("Data Diri")
-    st.info("Mohon isi data dengan jujur.")
     
     with st.form("form_data"):
         st.session_state.user_data['inisial'] = st.text_input("Inisial Nama")
@@ -145,7 +144,7 @@ elif st.session_state.page == "data_diri":
         st.session_state.user_data['gender'] = st.selectbox("Jenis Kelamin", ["Pria", "Wanita"])
         st.session_state.user_data['status'] = st.selectbox("Status", ["Pelajar", "Mahasiswa", "Bekerja", "Lainnya"])
         st.session_state.user_data['domisili'] = st.text_input("Domisili")
-        st.session_state.user_data['wa'] = st.text_input("Nomor Whatsapp (Untuk Reward)")
+        st.session_state.user_data['wa'] = st.text_input("Nomor Whatsapp")
         
         st.markdown("---")
         st.write("**Kebiasaan Digital**")
@@ -161,11 +160,11 @@ elif st.session_state.page == "data_diri":
                 st.rerun()
 
 # ==========================================
-# PAGE 3: KUESIONER (18 SOAL)
+# PAGE 3: KUESIONER (FIXED)
 # ==========================================
 elif st.session_state.page == "kuesioner":
     st.header("Kuesioner")
-    st.write("Seberapa setuju anda dengan pernyataan berikut? (1=Sangat Tidak Setuju, 4=Sangat Setuju)")
+    st.write("Mohon isi sesuai kondisi sebenarnya. (1=Sangat Tidak Setuju, 4=Sangat Setuju)")
     
     questions = [
         "Saya bermain internet lebih lama dari yang saya rencanakan.",
@@ -188,25 +187,33 @@ elif st.session_state.page == "kuesioner":
         "Saya merasa sulit berhenti ketika sedang online."
     ]
     
-    total_q_score = 0
+    responses = []
     with st.form("form_kuesioner"):
         for i, q in enumerate(questions):
             st.write(f"**{i+1}. {q}**")
-            val = st.radio(f"q{i}", [1, 2, 3, 4], key=f"kues_{i}", horizontal=True, label_visibility="collapsed")
-            total_q_score += val
+            # FIX: index=None agar defaultnya kosong
+            val = st.radio(f"q{i}", [1, 2, 3, 4], key=f"kues_{i}", horizontal=True, label_visibility="collapsed", index=None)
+            responses.append(val)
             st.divider()
             
-        if st.form_submit_button("Lanjut ke Tes Memori"):
-            st.session_state.user_data['skor_kuesioner'] = total_q_score
-            st.session_state.page = "corsi_intro"
-            st.rerun()
+        submitted = st.form_submit_button("Lanjut ke Tes Memori")
+        
+        if submitted:
+            # Validasi: Cek apakah ada yang None (belum diisi)
+            if None in responses:
+                st.error("Mohon isi semua pertanyaan kuesioner sebelum lanjut.")
+            else:
+                total_q_score = sum(responses)
+                st.session_state.user_data['skor_kuesioner'] = total_q_score
+                st.session_state.page = "corsi_intro"
+                st.rerun()
 
 # ==========================================
 # PAGE 4: CORSI INTRO
 # ==========================================
 elif st.session_state.page == "corsi_intro":
     st.header("Tes Memori (Corsi)")
-    st.info("Hafalkan urutan lingkaran biru yang muncul, lalu ulangi urutan tersebut dengan menekan tombol.")
+    st.info("Hafalkan urutan lingkaran biru yang muncul.")
     
     if st.button("Mulai Tes Memori", type="primary"):
         st.session_state.page = "corsi_game"
@@ -214,9 +221,12 @@ elif st.session_state.page == "corsi_intro":
         st.rerun()
 
 # ==========================================
-# PAGE 5: CORSI GAME
+# PAGE 5: CORSI GAME (CSS Tombol Bulat Aktif Disini)
 # ==========================================
 elif st.session_state.page == "corsi_game":
+    # AKTIFKAN CSS KHUSUS GAME DI SINI
+    inject_game_css()
+    
     st.markdown(f"<h4 style='text-align:center'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
 
@@ -278,7 +288,6 @@ elif st.session_state.page == "saving":
     status = st.empty()
     status.info("Sedang menyimpan data...")
     
-    # Susun Payload (Tanpa IAT)
     payload = st.session_state.user_data.copy()
     payload['skor_corsi'] = st.session_state.corsi_score
     
@@ -289,8 +298,6 @@ elif st.session_state.page == "saving":
         st.markdown(f"""
         ### Terima Kasih!
         Skor Memori Anda: **{st.session_state.corsi_score}**
-        
-        Kami akan menghubungi via WhatsApp jika Anda terpilih mendapatkan reward.
         """)
     else:
         status.error("Gagal koneksi internet.")
