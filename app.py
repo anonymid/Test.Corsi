@@ -8,7 +8,6 @@ st.set_page_config(page_title="Penelitian Psikologi", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- INIT STATE ---
-# State Halaman & User
 if 'page' not in st.session_state: st.session_state.page = "welcome"
 if 'user_data' not in st.session_state: st.session_state.user_data = {}
 
@@ -20,26 +19,6 @@ if 'corsi_phase' not in st.session_state: st.session_state.corsi_phase = "idle"
 if 'corsi_lives' not in st.session_state: st.session_state.corsi_lives = 1
 if 'corsi_score' not in st.session_state: st.session_state.corsi_score = 0
 
-# State IAT
-if 'iat_phase' not in st.session_state: st.session_state.iat_phase = "instruction"
-if 'iat_trials' not in st.session_state: st.session_state.iat_trials = []
-if 'iat_current_index' not in st.session_state: st.session_state.iat_current_index = 0
-if 'iat_start_time' not in st.session_state: st.session_state.iat_start_time = 0
-if 'iat_results' not in st.session_state: st.session_state.iat_results = [] # Simpan [word, reaction_time, is_correct]
-
-# --- DATA IAT (CONTOH SEDERHANA: INTERNET vs BUKAN) ---
-# Kiri: INTERNET, Kanan: BUKAN INTERNET
-IAT_WORDS = [
-    {"word": "Wifi", "category": "internet"},
-    {"word": "Buku", "category": "bukan"},
-    {"word": "Online", "category": "internet"},
-    {"word": "Taman", "category": "bukan"},
-    {"word": "Medsos", "category": "internet"},
-    {"word": "Olahraga", "category": "bukan"},
-    {"word": "Streaming", "category": "internet"},
-    {"word": "Tidur", "category": "bukan"}
-]
-
 def send_data(data):
     try:
         requests.post(GOOGLE_SCRIPT_URL, json=data)
@@ -47,65 +26,59 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL (Corsi Pixel + IAT + Form) ---
+# --- CSS GLOBAL (Corsi Pixel Lock - Bulat Sempurna) ---
 st.markdown("""
 <style>
     /* 1. SETUP LAYAR */
     .block-container { padding-top: 2rem !important; padding-bottom: 5rem !important; }
 
-    /* ================= CORSI STYLES ================= */
+    /* 2. GRID SYSTEM: DITENGAHKAN */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
         grid-template-columns: repeat(4, auto) !important;
-        justify-content: center !important;
-        gap: 15px !important;
+        justify-content: center !important; /* POSISI TENGAH LAYAR */
+        gap: 15px !important;      /* Jarak antar bola */
         margin: 0 auto !important;
         width: 100% !important;
     }
+
+    /* 3. RESET KOLOM STREAMLIT */
     div[data-testid="column"] {
         width: auto !important;
-        flex: 0 0 auto !important;
+        flex: 0 0 auto !important; 
         min-width: 0 !important;
         padding: 0 !important;
         margin: 0 !important;
     }
-    /* Tombol Corsi (Pixel Lock) */
-    .corsi-btn button {
-        width: 80px !important;
-        height: 80px !important;
-        border-radius: 50% !important;
+
+    /* 4. TOMBOL BULAT (FIX PIXEL) */
+    div.stButton > button {
+        /* DEFAULT (UNTUK PC/LAPTOP) */
+        width: 80px !important;    /* LEBAR FIX */
+        height: 80px !important;   /* TINGGI FIX */
+        
+        border-radius: 50% !important; /* LINGKARAN */
         border: 2px solid #bbb;
         padding: 0 !important;
         margin: 0 !important;
+        line-height: 0 !important;
     }
-    @media (max-width: 600px) {
-        div[data-testid="stHorizontalBlock"] { gap: 10px !important; }
-        .corsi-btn button { width: 60px !important; height: 60px !important; }
-    }
-    .corsi-btn button:active { background-color: #007bff; color: white; }
 
-    /* ================= IAT STYLES ================= */
-    .iat-container {
-        display: flex;
-        justify-content: space-between;
-        margin-top: 30px;
+    /* 5. UKURAN KHUSUS HP (LAYAR KECIL) */
+    @media (max-width: 600px) {
+        div.stButton > button {
+            width: 60px !important;  /* LEBIH KECIL DI HP */
+            height: 60px !important; /* SAMA PERSIS BIAR BULET */
+        }
+        /* Grid gap dikecilin dikit di HP */
+        div[data-testid="stHorizontalBlock"] {
+            gap: 10px !important;
+        }
     }
-    .iat-word {
-        font-size: 40px;
-        font-weight: bold;
-        text-align: center;
-        margin: 40px 0;
-        padding: 20px;
-        border: 2px dashed #ccc;
-        border-radius: 10px;
-    }
-    /* Tombol IAT Besar */
-    .iat-btn button {
-        width: 100% !important;
-        height: 80px !important;
-        font-size: 20px !important;
-        font-weight: bold !important;
-    }
+
+    /* Efek Klik */
+    div.stButton > button:active { background-color: #007bff; color: white; }
+    div.stButton { margin: 0 !important; width: auto !important; }
     
 </style>
 """, unsafe_allow_html=True)
@@ -138,10 +111,7 @@ def render_corsi_buttons():
             cols = st.columns(4) 
             for col in range(4):
                 idx = row * 4 + col
-                # Tambahkan class khusus 'corsi-btn' agar tidak bentrok dengan tombol lain
-                cols[col].markdown('<div class="corsi-btn">', unsafe_allow_html=True)
                 cols[col].button(" ", key=f"btn_{idx}", on_click=lambda i=idx: st.session_state.corsi_user_input.append(i))
-                cols[col].markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
 # PAGE 1: WELCOME
@@ -150,19 +120,20 @@ if st.session_state.page == "welcome":
     st.title("Penelitian Psikologi")
     st.markdown("""
     Halo! Terima kasih sudah bersedia membantu penelitian ini.
-    Anda akan melalui 3 tahapan singkat:
-    1.  📝 **Isi Data Diri & Kuesioner**
-    2.  ⚡ **Tes Reaksi (IAT)** - Sortir kata secepat mungkin.
-    3.  🧠 **Tes Memori (Corsi)** - Hafalkan urutan lingkaran.
+    Anda akan melalui tahapan singkat berikut:
     
-    **Reward:** E-Money bagi responden beruntung!
+    1.  📝 **Isi Data Diri**
+    2.  📋 **Kuesioner Singkat**
+    3.  🧠 **Tes Memori (Corsi Block)**
+    
+    Data Anda akan dijaga kerahasiaannya.
     """)
     if st.button("Saya Bersedia, Mulai!", type="primary"):
         st.session_state.page = "data_diri"
         st.rerun()
 
 # ==========================================
-# PAGE 2: DATA DIRI (LENGKAP)
+# PAGE 2: DATA DIRI
 # ==========================================
 elif st.session_state.page == "data_diri":
     st.header("Data Diri")
@@ -225,90 +196,26 @@ elif st.session_state.page == "kuesioner":
             total_q_score += val
             st.divider()
             
-        if st.form_submit_button("Lanjut ke Tes IAT"):
+        if st.form_submit_button("Lanjut ke Tes Memori"):
             st.session_state.user_data['skor_kuesioner'] = total_q_score
-            st.session_state.page = "iat_intro"
+            st.session_state.page = "corsi_intro"
             st.rerun()
 
 # ==========================================
-# PAGE 4: IAT (IMPLICIT ASSOCIATION TEST)
-# ==========================================
-elif st.session_state.page == "iat_intro":
-    st.header("Tes Reaksi (IAT)")
-    st.info("""
-    **Instruksi:**
-    1. Sebuah kata akan muncul di tengah.
-    2. Tekan tombol **KIRI** jika kata berhubungan dengan **INTERNET**.
-    3. Tekan tombol **KANAN** jika kata berhubungan dengan **BUKAN INTERNET**.
-    4. Lakukan secepat mungkin!
-    """)
-    if st.button("Mulai IAT", type="primary"):
-        # Persiapan Soal (Diacak)
-        trials = IAT_WORDS * 2 # 16 Soal
-        random.shuffle(trials)
-        st.session_state.iat_trials = trials
-        st.session_state.iat_current_index = 0
-        st.session_state.iat_results = []
-        st.session_state.page = "iat_test"
-        # Set waktu mulai untuk soal pertama
-        st.session_state.iat_start_time = time.time()
-        st.rerun()
-
-elif st.session_state.page == "iat_test":
-    # Cek apakah soal sudah habis
-    if st.session_state.iat_current_index >= len(st.session_state.iat_trials):
-        st.session_state.page = "corsi_intro"
-        st.rerun()
-    
-    current_word_obj = st.session_state.iat_trials[st.session_state.iat_current_index]
-    word_text = current_word_obj['word']
-    correct_cat = current_word_obj['category'] # 'internet' or 'bukan'
-
-    st.markdown(f"<div class='iat-word'>{word_text}</div>", unsafe_allow_html=True)
-    
-    # Fungsi Callback saat tombol ditekan
-    def submit_iat(choice):
-        end_time = time.time()
-        rt = round((end_time - st.session_state.iat_start_time) * 1000) # ms
-        
-        # Cek Jawaban
-        is_correct = (choice == correct_cat)
-        
-        # Simpan Data
-        st.session_state.iat_results.append({
-            "word": word_text,
-            "rt": rt,
-            "correct": is_correct
-        })
-        
-        # Lanjut Soal
-        st.session_state.iat_current_index += 1
-        st.session_state.iat_start_time = time.time() # Reset timer untuk soal berikutnya
-
-    # Layout Tombol Kiri Kanan
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown('<div class="iat-btn">', unsafe_allow_html=True)
-        st.button("INTERNET (Kiri)", on_click=submit_iat, args=("internet",), use_container_width=True, key=f"iat_l_{st.session_state.iat_current_index}")
-        st.markdown('</div>', unsafe_allow_html=True)
-    with c2:
-        st.markdown('<div class="iat-btn">', unsafe_allow_html=True)
-        st.button("BUKAN INTERNET (Kanan)", on_click=submit_iat, args=("bukan",), use_container_width=True, key=f"iat_r_{st.session_state.iat_current_index}")
-        st.markdown('</div>', unsafe_allow_html=True)
-
-# ==========================================
-# PAGE 5: CORSI (MEMORI KERJA) - PIXEL FIX
+# PAGE 4: CORSI INTRO
 # ==========================================
 elif st.session_state.page == "corsi_intro":
     st.header("Tes Memori (Corsi)")
-    st.success("Tes IAT Selesai! Sekarang tes terakhir.")
-    st.info("Hafalkan urutan lingkaran biru yang muncul, lalu ulangi.")
+    st.info("Hafalkan urutan lingkaran biru yang muncul, lalu ulangi urutan tersebut dengan menekan tombol.")
     
     if st.button("Mulai Tes Memori", type="primary"):
         st.session_state.page = "corsi_game"
         st.session_state.corsi_phase = "idle"
         st.rerun()
 
+# ==========================================
+# PAGE 5: CORSI GAME
+# ==========================================
 elif st.session_state.page == "corsi_game":
     st.markdown(f"<h4 style='text-align:center'>Level: {st.session_state.corsi_level - 1}</h4>", unsafe_allow_html=True)
     layar = st.empty()
@@ -357,7 +264,7 @@ elif st.session_state.page == "corsi_game":
             elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
                 st.toast("Benar! 🎉")
                 time.sleep(0.5)
-                st.session_state.corsi_score = st.session_state.corsi_level - 1 # Simpan skor
+                st.session_state.corsi_score = st.session_state.corsi_level - 1
                 st.session_state.corsi_level += 1
                 st.session_state.corsi_lives = 1
                 st.session_state.corsi_phase = "idle"
@@ -371,17 +278,9 @@ elif st.session_state.page == "saving":
     status = st.empty()
     status.info("Sedang menyimpan data...")
     
-    # Hitung Rata-rata RT IAT
-    total_rt = sum([x['rt'] for x in st.session_state.iat_results])
-    avg_rt = total_rt / len(st.session_state.iat_results) if st.session_state.iat_results else 0
-    correct_iat = len([x for x in st.session_state.iat_results if x['correct']])
-    
-    # Susun Payload
+    # Susun Payload (Tanpa IAT)
     payload = st.session_state.user_data.copy()
     payload['skor_corsi'] = st.session_state.corsi_score
-    payload['iat_avg_rt'] = avg_rt
-    payload['iat_accuracy'] = correct_iat
-    # Kita bisa kirim detail IAT jika perlu, tapi ini ringkasannya saja
     
     if send_data(payload):
         status.empty()
@@ -390,7 +289,6 @@ elif st.session_state.page == "saving":
         st.markdown(f"""
         ### Terima Kasih!
         Skor Memori Anda: **{st.session_state.corsi_score}**
-        Rata-rata Waktu Reaksi: **{avg_rt} ms**
         
         Kami akan menghubungi via WhatsApp jika Anda terpilih mendapatkan reward.
         """)
