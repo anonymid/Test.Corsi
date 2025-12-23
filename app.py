@@ -4,7 +4,7 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Corsi Final Sync", layout="centered")
+st.set_page_config(page_title="Corsi Bulat Style", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- STATE ---
@@ -23,36 +23,30 @@ def send_data(data):
     except:
         return False
 
-# --- CSS "MASTER LAYOUT" ---
-# Bagian ini mengatur agar HTML (Soal) dan Tombol (Jawaban) punya ukuran SAMA PERSIS.
+# --- CSS "BULAT STYLE" ---
 st.markdown("""
 <style>
     /* 1. SETUP LAYAR */
     .block-container { padding-top: 1rem !important; padding-bottom: 5rem !important; }
 
-    /* 2. UKURAN "PAPAN GAME" (CONTAINER UTAMA) */
-    /* Ini berlaku untuk wadah tombol Streamlit */
+    /* 2. GRID SYSTEM (CONTAINER UTAMA) */
     div[data-testid="stHorizontalBlock"] {
         display: grid !important;
         grid-template-columns: repeat(4, 1fr) !important;
-        gap: 10px !important;      /* Jarak antar kotak */
+        gap: 15px !important;      /* Jarak antar lingkaran lebih renggang biar cantik */
         margin: 0 auto !important; /* Posisi Tengah */
         width: 100% !important;
     }
 
-    /* --- ATURAN UKURAN RESPONSIF --- */
-    
-    /* A. HP (Layar Kecil): Lebar 300px */
+    /* --- ATURAN UKURAN RESPONSIF (HP & PC) --- */
     @media (max-width: 600px) {
         div[data-testid="stHorizontalBlock"] { max-width: 300px !important; }
     }
-
-    /* B. PC (Layar Besar): Lebar 500px (BIAR GEDE) */
     @media (min-width: 601px) {
         div[data-testid="stHorizontalBlock"] { max-width: 500px !important; }
     }
 
-    /* 3. RESET TOMBOL STREAMLIT BIAR NURUT SAMA GRID DI ATAS */
+    /* 3. RESET TOMBOL STREAMLIT */
     div[data-testid="column"] {
         width: auto !important;
         min-width: 0 !important;
@@ -60,13 +54,16 @@ st.markdown("""
         margin: 0 !important;
     }
 
+    /* 4. TOMBOL JADI LINGKARAN (BULET) */
     div.stButton > button {
-        width: 100% !important;      /* Menuhin Grid */
-        aspect-ratio: 1 / 1 !important; /* Wajib Kotak */
+        width: 100% !important;
+        aspect-ratio: 1 / 1 !important; /* Wajib 1:1 biar jadi lingkaran sempurna */
         height: auto !important;
         min-height: 0 !important;
         padding: 0 !important;
-        border-radius: 6px !important;
+        
+        /* INI KUNCINYA BIAR JADI BULET: */
+        border-radius: 50% !important; 
         border: 2px solid #bbb;
         margin: 0 !important;
     }
@@ -76,13 +73,13 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# --- FUNGSI VISUAL (SOAL) ---
-# Menggunakan logic ukuran yang sama persis
+# --- FUNGSI VISUAL (SOAL BULET) ---
 def get_html(highlight_idx=None):
     boxes = ""
     for i in range(16):
         color = "#007bff" if i == highlight_idx else "#e0e0e0"
-        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:6px; border:2px solid #999; width:100%;"></div>'
+        # border-radius: 50% juga diterapkan di sini
+        boxes += f'<div style="background-color:{color}; aspect-ratio:1/1; border-radius:50%; border:2px solid #999; width:100%;"></div>'
     
     return f"""
     <div class="soal-container">
@@ -90,7 +87,7 @@ def get_html(highlight_idx=None):
             .soal-container {{
                 display: grid; 
                 grid-template-columns: repeat(4, 1fr); 
-                gap: 10px; 
+                gap: 15px; /* Jarak disamakan dengan tombol */
                 width: 100%;
                 margin: 0 auto 20px auto; 
             }}
@@ -102,7 +99,7 @@ def get_html(highlight_idx=None):
     </div>
     """
 
-# --- FUNGSI INPUT (JAWABAN) ---
+# --- FUNGSI INPUT (JAWABAN BULET) ---
 def render_buttons():
     # Container ini akan otomatis kena CSS grid di atas
     with st.container():
@@ -115,7 +112,7 @@ def render_buttons():
 # --- PAGE 1: WELCOME ---
 if st.session_state.page == "welcome":
     st.title("Tes Memori")
-    st.write("Versi Final: PC Besar & Rapat")
+    st.write("Versi Bulat (Lingkaran)")
     with st.form("f"):
         nama = st.text_input("Nama")
         wa = st.text_input("WA")
