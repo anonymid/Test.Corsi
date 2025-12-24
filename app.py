@@ -202,4 +202,145 @@ elif st.session_state.page == "kuesioner":
         "Saya membentuk pertemanan baru melalui internet.",
         "Saya merahasiakan aktivitas saya di internet dari orang lain.",
         "Saya menutupi pikiran yang mengganggu dengan memikirkan hal menyenangkan tentang internet.",
-        "Saya takut hidup tanpa internet
+        "Saya takut hidup tanpa internet akan membosankan atau kosong.",
+        "Saya marah jika ada yang mengganggu saat saya bermain internet.",
+        "Saya terus memikirkan internet ketika tidak sedang bermain.",
+        "Saya lebih memilih internet daripada beraktivitas dengan orang lain.",
+        "Saya merasa gelisah jika tidak bermain internet, dan tenang kembali setelah bermain.",
+        "Saya mengabaikan pekerjaan rumah demi bermain internet.",
+        "Waktu belajar atau nilai akademik saya menurun akibat internet.",
+        "Kinerja saya di sekolah/rumah terganggu karena internet.",
+        "Saya sering kurang tidur karena bermain internet.",
+        "Saya berusaha mengurangi waktu internet tetapi gagal.",
+        "Saya sering berkata 'sebentar lagi' saat bermain internet.",
+        "Saya berusaha menyembunyikan durasi bermain internet.",
+        "Saya mengabaikan kegiatan penting demi internet.",
+        "Saya merasa sulit berhenti ketika sedang bermain internet."
+    ]
+    
+    responses = []
+    with st.form("form_kuesioner"):
+        for i, q in enumerate(questions):
+            st.write(f"**{i+1}. {q}**")
+            # Index None agar default kosong
+            val = st.radio(f"q{i}", [1, 2, 3, 4], key=f"kues_{i}", horizontal=True, label_visibility="collapsed", index=None)
+            responses.append(val)
+            st.divider()
+            
+        submitted = st.form_submit_button("Mulai Tes")
+        
+        if submitted:
+            if None in responses:
+                st.error("Mohon isi semua pertanyaan sebelum melanjutkan.")
+            else:
+                # 1. SIMPAN DETAIL PER PERTANYAAN (Q1=.., Q2=..)
+                for i, r in enumerate(responses):
+                    st.session_state.user_data[f'soal_{i+1}'] = r
+                
+                # 2. SIMPAN JUGA TOTALNYA (Opsional, buat jaga-jaga)
+                total_q_score = sum(responses)
+                st.session_state.user_data['skor_kuesioner'] = total_q_score
+                
+                # LANJUT KE GAME
+                st.session_state.page = "corsi_game"
+                st.session_state.corsi_phase = "idle"
+                # Reset State Game
+                st.session_state.corsi_level = 1
+                st.session_state.corsi_lives = 2
+                st.session_state.corsi_score = 0
+                st.rerun()
+
+# ==========================================
+# PAGE: CORSI GAME
+# ==========================================
+elif st.session_state.page == "corsi_game":
+    st.header("Tes Corsi Block Tapping")
+    st.write(f"Level: {st.session_state.corsi_level} / 9")
+    
+    layar = st.empty()
+
+    # FASE 1: PERSIAPAN
+    if st.session_state.corsi_phase == "idle":
+        with layar.container():
+            st.write("Perhatikan kolom di bawah ini, lalu ulangi bagian yang menyala pada kolom yang tersedia.")
+            st.markdown(get_corsi_html(None), unsafe_allow_html=True)
+            
+            # Level 1 = 2 blink, dst
+            seq_len = st.session_state.corsi_level + 1
+            
+            c1, c2, c3 = st.columns([1,4,1]) 
+            with c2:
+                if st.button("Mulai Level Ini", type="primary", use_container_width=True):
+                    st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(seq_len)]
+                    st.session_state.corsi_user_input = []
+                    st.session_state.corsi_phase = "showing"
+                    st.rerun()
+
+    # FASE 2: SHOWING
+    elif st.session_state.corsi_phase == "showing":
+        layar.markdown(get_corsi_html(None), unsafe_allow_html=True)
+        time.sleep(0.5)
+        for item in st.session_state.corsi_sequence:
+            layar.markdown(get_corsi_html(item), unsafe_allow_html=True)
+            time.sleep(0.8)
+            layar.markdown(get_corsi_html(None), unsafe_allow_html=True)
+            time.sleep(0.3)
+        st.session_state.corsi_phase = "input"
+        st.rerun()
+
+    # FASE 3: INPUT
+    elif st.session_state.corsi_phase == "input":
+        layar.empty()
+        st.write("Giliran Kamu!")
+        render_corsi_buttons()
+
+        if len(st.session_state.corsi_user_input) > 0:
+            curr = len(st.session_state.corsi_user_input) - 1
+            
+            # JIKA SALAH
+            if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
+                time.sleep(0.3) # Silent fail
+                
+                st.session_state.corsi_lives -= 1
+                
+                if st.session_state.corsi_lives > 0:
+                    # Masih punya nyawa -> Ulangi Level yang sama
+                    st.session_state.corsi_phase = "idle" 
+                    st.rerun()
+                else:
+                    # Nyawa habis -> STOP
+                    st.session_state.page = "saving"
+                    st.rerun()
+            
+            # JIKA BENAR
+            elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
+                time.sleep(0.2)
+                st.session_state.corsi_score = st.session_state.corsi_level # Save score level
+                
+                if st.session_state.corsi_level >= 9:
+                    st.session_state.page = "saving" # Tamat
+                else:
+                    st.session_state.corsi_level += 1
+                    st.session_state.corsi_lives = 2 # Reset nyawa
+                    st.session_state.corsi_phase = "idle"
+                st.rerun()
+
+# ==========================================
+# PAGE: PENUTUP (AUTO SAVE)
+# ==========================================
+elif st.session_state.page == "saving":
+    st.header("Penutup")
+    status = st.empty()
+    status.info("Menyimpan data...")
+    
+    payload = st.session_state.user_data.copy()
+    payload['skor_corsi'] = st.session_state.corsi_score
+    
+    if send_data(payload):
+        status.empty()
+        st.success("Terimakasih telah menjadi bagian dari penelitian kami, jawaban anda telah tersimpan secara otomatis.")
+        st.balloons()
+    else:
+        status.error("Gagal menyimpan data karena koneksi internet.")
+        if st.button("Coba Simpan Lagi"):
+            st.rerun()
