@@ -12,11 +12,10 @@ if 'page' not in st.session_state: st.session_state.page = "welcome"
 if 'user_data' not in st.session_state: st.session_state.user_data = {}
 
 # State Corsi
-if 'corsi_level' not in st.session_state: st.session_state.corsi_level = 2
+if 'corsi_level' not in st.session_state: st.session_state.corsi_level = 1 # Mulai Level 1
 if 'corsi_sequence' not in st.session_state: st.session_state.corsi_sequence = []
 if 'corsi_user_input' not in st.session_state: st.session_state.corsi_user_input = []
 if 'corsi_phase' not in st.session_state: st.session_state.corsi_phase = "idle"
-if 'corsi_lives' not in st.session_state: st.session_state.corsi_lives = 1
 if 'corsi_score' not in st.session_state: st.session_state.corsi_score = 0
 
 def send_data(data):
@@ -26,7 +25,7 @@ def send_data(data):
     except:
         return False
 
-# --- CSS GLOBAL & GAME ---
+# --- CSS GLOBAL ---
 st.markdown("""
 <style>
     /* 1. SETUP LAYAR */
@@ -41,11 +40,8 @@ st.markdown("""
         margin: 0 !important;
     }
 
-    /* ============================================================
-       STYLE KHUSUS GAME CORSI
-       ============================================================ */
-
-    /* GRID 4 KOLOM (Cuma aktif kalau ada 4 kolom anak) */
+    /* CSS KHUSUS GAME CORSI */
+    /* GRID 4 KOLOM */
     div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) {
         display: grid !important;
         grid-template-columns: repeat(4, auto) !important;
@@ -55,8 +51,7 @@ st.markdown("""
         width: 100% !important;
     }
 
-    /* TOMBOL JAWABAN (SECONDARY) -> BULAT */
-    /* Kita target spesifik tombol yang 'kind="secondary"' di dalam grid */
+    /* TOMBOL JAWABAN (BULAT) */
     div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) button[kind="secondary"] {
         width: 80px !important;    
         height: 80px !important;
@@ -67,7 +62,7 @@ st.markdown("""
         line-height: 0 !important;
     }
 
-    /* RESPONSIF HP UNTUK TOMBOL BULAT */
+    /* RESPONSIF HP */
     @media (max-width: 600px) {
         div[data-testid="stHorizontalBlock"]:has(> div:nth-child(4)) button[kind="secondary"] {
             width: 60px !important;
@@ -78,21 +73,16 @@ st.markdown("""
         }
     }
 
-    /* ============================================================
-       PERBAIKAN TOMBOL MULAI (PRIMARY)
-       ============================================================ */
-    
-    /* Kita paksa tombol Primary (Merah) agar SELALU KOTAK & NORMAL */
-    /* Ini akan meng-override aturan bulat di atas jika tidak sengaja kena */
+    /* TOMBOL MULAI (KOTAK NORMAL) */
     button[kind="primary"] {
-        width: 100% !important;     /* Lebar penuh container */
-        height: auto !important;    /* Tinggi otomatis ikut teks */
-        aspect-ratio: unset !important; /* Hapus rasio 1:1 */
-        border-radius: 8px !important;  /* Sudut kotak wajar */
+        width: 100% !important;     
+        height: auto !important;    
+        aspect-ratio: unset !important;
+        border-radius: 8px !important; 
         padding: 0.5rem 1rem !important;
         margin-top: 10px !important;
         line-height: 1.5 !important;
-        white-space: normal !important; /* Teks jangan dipotong */
+        white-space: normal !important;
     }
 
     div.stButton > button:active { background-color: #007bff; color: white; }
@@ -244,6 +234,9 @@ elif st.session_state.page == "kuesioner":
                 st.session_state.user_data['skor_kuesioner'] = total_q_score
                 st.session_state.page = "corsi_game"
                 st.session_state.corsi_phase = "idle"
+                # Reset State Game
+                st.session_state.corsi_level = 1
+                st.session_state.corsi_score = 0
                 st.rerun()
 
 # ==========================================
@@ -251,27 +244,28 @@ elif st.session_state.page == "kuesioner":
 # ==========================================
 elif st.session_state.page == "corsi_game":
     st.header("Tes Corsi Block Tapping")
-    st.write(f"Level: {st.session_state.corsi_level - 1}")
+    st.write(f"Level: {st.session_state.corsi_level} / 9")
     
     layar = st.empty()
 
-    # FASE 1: IDLE
+    # FASE 1: IDLE (PERSIAPAN LEVEL)
     if st.session_state.corsi_phase == "idle":
         with layar.container():
             st.write("Perhatikan kolom di bawah ini, lalu ulangi bagian yang menyala pada kolom yang tersedia.")
             st.markdown(get_corsi_html(None), unsafe_allow_html=True)
             
-            # Layout Tombol Mulai (Dibuat lebar agar rapi)
+            # Panjang urutan = Level + 1 (Level 1 = 2 blink)
+            seq_len = st.session_state.corsi_level + 1
+            
             c1, c2, c3 = st.columns([1,4,1]) 
             with c2:
-                # Type Primary -> Kena CSS khusus biar KOTAK
                 if st.button("Mulai Level Ini", type="primary", use_container_width=True):
-                    st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(st.session_state.corsi_level)]
+                    st.session_state.corsi_sequence = [random.randint(0, 15) for _ in range(seq_len)]
                     st.session_state.corsi_user_input = []
                     st.session_state.corsi_phase = "showing"
                     st.rerun()
 
-    # FASE 2: SHOWING
+    # FASE 2: SHOWING (ANIMASI)
     elif st.session_state.corsi_phase == "showing":
         layar.markdown(get_corsi_html(None), unsafe_allow_html=True)
         time.sleep(0.5)
@@ -283,7 +277,7 @@ elif st.session_state.page == "corsi_game":
         st.session_state.corsi_phase = "input"
         st.rerun()
 
-    # FASE 3: INPUT
+    # FASE 3: INPUT USER
     elif st.session_state.corsi_phase == "input":
         layar.empty()
         st.write("Giliran Kamu!")
@@ -292,30 +286,38 @@ elif st.session_state.page == "corsi_game":
         if len(st.session_state.corsi_user_input) > 0:
             curr = len(st.session_state.corsi_user_input) - 1
             
-            # CEK JIKA SALAH
-            if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
-                # HAPUS TOAST / TEXT. Silent Fail.
-                time.sleep(0.5) # Jeda sebentar biar user sadar kliknya masuk
-                
-                if st.session_state.corsi_lives > 0:
-                    st.session_state.corsi_lives -= 1
-                    st.session_state.corsi_phase = "idle" # Ulang Level
-                    st.rerun()
-                else:
-                    st.session_state.page = "saving" # Game Over
-                    st.rerun()
+            # --- CEK JAWABAN ---
             
-            # CEK JIKA BENAR & SELESAI
+            # 1. JIKA SALAH KLIK (LANGSUNG SALAH)
+            if st.session_state.corsi_user_input[curr] != st.session_state.corsi_sequence[curr]:
+                time.sleep(0.5) # Jeda silent
+                
+                # LOGIKA BARU: Salah = Tidak dapat poin, tapi TETAP lanjut level
+                # Cek apakah sudah level max (9)
+                if st.session_state.corsi_level >= 9:
+                    st.session_state.page = "saving"
+                else:
+                    st.session_state.corsi_level += 1
+                    st.session_state.corsi_phase = "idle"
+                st.rerun()
+            
+            # 2. JIKA KLIK BENAR & URUTAN SELESAI
             elif len(st.session_state.corsi_user_input) == len(st.session_state.corsi_sequence):
                 time.sleep(0.2)
-                st.session_state.corsi_score = st.session_state.corsi_level - 1
-                st.session_state.corsi_level += 1
-                st.session_state.corsi_lives = 1 # Reset nyawa level baru
-                st.session_state.corsi_phase = "idle"
+                
+                # Benar = Dapat Poin
+                st.session_state.corsi_score += 1 
+                
+                # Cek apakah sudah level max (9)
+                if st.session_state.corsi_level >= 9:
+                    st.session_state.page = "saving"
+                else:
+                    st.session_state.corsi_level += 1
+                    st.session_state.corsi_phase = "idle"
                 st.rerun()
 
 # ==========================================
-# PAGE: SAVING
+# PAGE: PENUTUP (AUTO SAVE)
 # ==========================================
 elif st.session_state.page == "saving":
     st.header("Penutup")
