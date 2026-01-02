@@ -2,7 +2,7 @@ import streamlit as st
 import requests
 import time
 import random
-
+asd
 # --- CONFIG ---
 st.set_page_config(page_title="Penelitian Psikologi", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
