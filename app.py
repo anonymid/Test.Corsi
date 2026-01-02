@@ -1,7 +1,4 @@
 import streamlit as st
-import requests
-import time
-import random
 st.error("Aplikasi ini sudah dinonaktifkan. Terima kasih telah berpartisipasi.")
 st.stop() # Perintah ini menghentikan semua proses di bawahnya
 # --- CONFIG ---
