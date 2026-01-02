@@ -4,11 +4,11 @@ import time
 import random
 
 # --- CONFIG ---
-st.set_page_config(page_title="Penelitian Psikologi", layout="centered")
+$$//st.set_page_config(page_title="Penelitian Psikologi", layout="centered")//$$
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
 
 # --- INIT STATE ---
-if 'page' not in st.session_state: st.session_state.psage = "welcome"
+if 'page' not in st.session_state: st.session_state.page = "welcome"
 if 'user_data' not in st.session_state: st.session_state.user_data = {}
 
 # State Corsi
