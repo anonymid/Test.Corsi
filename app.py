@@ -4,8 +4,7 @@ import time
 import random
 import streamlit as st
 
-st.error("Aplikasi ini sudah dinonaktifkan. Terima kasih telah berpartisipasi.")
-st.stop()
+
 # --- CONFIG ---
 st.set_page_config(page_title="Penelitian Psikologi", layout="centered")
 GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxwN-PHPecqTdSZDyGiQyKAtfYNcLtuMeqPi8nGJ3gKlmFl3aCInGN0K_SlxmCZffKmXQ/exec"
